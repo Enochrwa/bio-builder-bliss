@@ -6,17 +6,20 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { 
   Download, Plus, X, Github, Linkedin, Twitter, Globe, Mail, Instagram, 
   Facebook, Youtube, Upload, Palette, Monitor, Sun, Moon, Star, Calendar,
   MapPin, Building, GraduationCap, Award, FileText, User, Code2, 
   Briefcase, MessageSquare, BookOpen, ExternalLink, Play, Zap,
-  Rocket, Sparkles
+  Rocket, Sparkles, Expand, Container, Send
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Scene3D } from '@/components/3d/Scene3D';
 import JSZip from 'jszip';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
 interface SocialLink {
   id: string;
@@ -32,7 +35,7 @@ interface Project {
   technologies: string[];
   liveUrl: string;
   githubUrl: string;
-  image: string;
+  images: string[];
   featured: boolean;
 }
 
@@ -115,9 +118,13 @@ interface PortfolioData {
   interests: string[];
   availability: string;
   timezone: string;
+  contact: {
+    enabled: boolean;
+    formspreeEndpoint: string;
+  };
 }
 
-type Theme = 'light' | 'dark' | 'modern';
+type Theme = 'light' | 'dark' | 'modern' | 'glassmorphism';
 
 const socialPlatforms = [
   { name: 'GitHub', icon: 'Github', placeholder: 'https://github.com/username' },
@@ -174,7 +181,7 @@ const Index = () => {
         technologies: ['React', 'Node.js', 'PostgreSQL', 'Stripe'],
         liveUrl: 'https://ecommerce-demo.com',
         githubUrl: 'https://github.com/alexjohnson/ecommerce',
-        image: '',
+        images: [],
         featured: true
       },
       {
@@ -184,7 +191,7 @@ const Index = () => {
         technologies: ['Vue.js', 'Express', 'Socket.io', 'MongoDB'],
         liveUrl: 'https://taskapp-demo.com',
         githubUrl: 'https://github.com/alexjohnson/taskapp',
-        image: '',
+        images: [],
         featured: false
       }
     ],
@@ -258,7 +265,11 @@ const Index = () => {
     ],
     interests: ['Open Source', 'Machine Learning', 'Photography', 'Rock Climbing'],
     availability: 'Available for freelance projects',
-    timezone: 'PST (UTC-8)'
+    timezone: 'PST (UTC-8)',
+    contact: {
+      enabled: true,
+      formspreeEndpoint: 'https://formspree.io/f/your_form_id'
+    }
   });
 
   const sections = [
@@ -270,6 +281,7 @@ const Index = () => {
     { id: 'certifications', label: 'Certifications', icon: Award },
     { id: 'testimonials', label: 'Testimonials', icon: MessageSquare },
     { id: 'blog', label: 'Blog Posts', icon: BookOpen },
+    { id: 'contact', label: 'Contact Form', icon: Send },
   ];
 
   const handleInputChange = (field: keyof PortfolioData, value: any) => {
@@ -347,7 +359,7 @@ const Index = () => {
       technologies: [],
       liveUrl: '',
       githubUrl: '',
-      image: '',
+      images: [],
       featured: false
     };
     handleInputChange('projects', [...portfolioData.projects, newProject]);
@@ -363,6 +375,43 @@ const Index = () => {
   const removeProject = (id: string) => {
     const filteredProjects = portfolioData.projects.filter(project => project.id !== id);
     handleInputChange('projects', filteredProjects);
+  };
+
+  const handleProjectImageUpload = (projectId: string, files: FileList | null) => {
+    if (!files) return;
+    const newImages: string[] = [];
+    const promises = Array.from(files).map(file => {
+      return new Promise<void>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          newImages.push(e.target?.result as string);
+          resolve();
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    });
+
+    Promise.all(promises).then(() => {
+      const updatedProjects = portfolioData.projects.map(p => {
+        if (p.id === projectId) {
+          return { ...p, images: [...p.images, ...newImages] };
+        }
+        return p;
+      });
+      handleInputChange('projects', updatedProjects);
+    });
+  };
+
+  const handleRemoveProjectImage = (projectId: string, imageIndex: number) => {
+    const updatedProjects = portfolioData.projects.map(p => {
+      if (p.id === projectId) {
+        const updatedImages = p.images.filter((_, index) => index !== imageIndex);
+        return { ...p, images: updatedImages };
+      }
+      return p;
+    });
+    handleInputChange('projects', updatedProjects);
   };
 
   const addExperience = () => {
@@ -496,6 +545,17 @@ const Index = () => {
             <div class="projects-grid">
                 ${data.projects.map(project => `
                 <div class="project-card ${project.featured ? 'featured' : ''}">
+                    ${project.images && project.images.length > 0 ? `
+                    <div class="project-image-gallery">
+                        <div class="gallery-images">
+                            ${project.images.map(image => `<img src="${image}" alt="${project.title} image" class="gallery-image">`).join('')}
+                        </div>
+                        ${project.images.length > 1 ? `
+                        <button class="gallery-prev">&lt;</button>
+                        <button class="gallery-next">&gt;</button>
+                        ` : ''}
+                    </div>
+                    ` : ''}
                     <div class="project-header">
                         <h3 class="project-title">${project.title}</h3>
                         <div class="project-links">
@@ -559,6 +619,17 @@ const Index = () => {
                     `).join('')}
                 </div>
             </div>
+            ${data.contact.enabled && data.contact.formspreeEndpoint ? `
+            <form id="contact-form" class="contact-form" action="${data.contact.formspreeEndpoint}" method="POST">
+                <div class="form-group">
+                    <input type="text" name="name" placeholder="Your Name" required>
+                    <input type="email" name="_replyto" placeholder="Your Email" required>
+                </div>
+                <textarea name="message" placeholder="Your Message" rows="5" required></textarea>
+                <button type="submit" class="btn-primary">Send Message</button>
+                <p id="form-status" class="form-status"></p>
+            </form>
+            ` : ''}
         </div>
     </section>
 
@@ -595,6 +666,15 @@ const Index = () => {
         accent: '#fbbf24',
         border: 'rgba(255, 255, 255, 0.2)',
         shadow: '0 8px 32px rgba(0, 0, 0, 0.2)'
+      },
+      glassmorphism: {
+        background: 'linear-gradient(135deg, #232526 0%, #414345 100%)',
+        text: '#ffffff',
+        textLight: '#e5e7eb',
+        card: 'rgba(255, 255, 255, 0.05)',
+        accent: '#08f7fe',
+        border: 'rgba(255, 255, 255, 0.15)',
+        shadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
       }
     };
 
@@ -875,6 +955,48 @@ body {
     gap: 2rem;
 }
 
+.project-image-gallery {
+    position: relative;
+    overflow: hidden;
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+    height: 200px;
+}
+
+.gallery-images {
+    display: flex;
+    height: 100%;
+    transition: transform 0.5s ease-in-out;
+}
+
+.gallery-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.gallery-prev, .gallery-next {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    padding: 0.5rem;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.gallery-prev { left: 10px; }
+.gallery-next { right: 10px; }
+
 .project-card {
     background: ${styles.card};
     border-radius: 20px;
@@ -883,6 +1005,7 @@ body {
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
+    ${theme === 'glassmorphism' ? 'backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);' : ''}
 }
 
 .project-card:hover {
@@ -1069,6 +1192,51 @@ body {
     font-size: 0.9rem;
 }
 
+.contact-form {
+    max-width: 700px;
+    margin: 3rem auto 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.contact-form input, .contact-form textarea {
+    width: 100%;
+    padding: 1rem;
+    background: ${styles.border};
+    border: 1px solid ${styles.border};
+    border-radius: 10px;
+    color: ${styles.text};
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+.contact-form input:focus, .contact-form textarea:focus {
+    outline: none;
+    border-color: ${styles.accent};
+}
+
+.contact-form input::placeholder, .contact-form textarea::placeholder {
+    color: ${styles.textLight};
+}
+
+.contact-form button {
+    align-self: center;
+}
+
+.form-status {
+    text-align: center;
+    margin-top: 1rem;
+    font-weight: 500;
+    min-height: 1.5rem;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .nav-links {
@@ -1238,6 +1406,74 @@ body {
     });
 
     console.log('🚀 Portfolio loaded successfully! Welcome to an amazing developer experience.');
+
+    const contactForm = document.getElementById('contact-form');
+    if (contactForm) {
+        contactForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const form = e.target;
+            const data = new FormData(form);
+            const status = document.getElementById('form-status');
+            status.innerHTML = 'Sending...';
+            const bodyStyles = window.getComputedStyle(document.body);
+            status.style.color = bodyStyles.color;
+
+            fetch(form.action, {
+                method: form.method,
+                body: data,
+                headers: {
+                    'Accept': 'application/json'
+                }
+            }).then(response => {
+                if (response.ok) {
+                    status.innerHTML = "Thanks for your submission!";
+                    status.style.color = 'green';
+                    form.reset();
+                } else {
+                    response.json().then(data => {
+                        if (Object.hasOwn(data, 'errors')) {
+                            status.innerHTML = data["errors"].map(error => error["message"]).join(", ");
+                        } else {
+                            status.innerHTML = "Oops! There was a problem submitting your form";
+                        }
+                        status.style.color = 'red';
+                    })
+                }
+            }).catch(error => {
+                status.innerHTML = "Oops! There was a problem submitting your form";
+                status.style.color = 'red';
+            });
+        });
+    }
+
+    document.querySelectorAll('.project-image-gallery').forEach(gallery => {
+        const imagesContainer = gallery.querySelector('.gallery-images');
+        if (!imagesContainer) return;
+        const images = gallery.querySelectorAll('.gallery-image');
+        const prevButton = gallery.querySelector('.gallery-prev');
+        const nextButton = gallery.querySelector('.gallery-next');
+        let currentIndex = 0;
+
+        function showImage(index) {
+            imagesContainer.style.transform = 'translateX(-' + (index * 100) + '%)';
+        }
+
+        if (prevButton && nextButton && images.length > 1) {
+            prevButton.addEventListener('click', () => {
+                currentIndex = (currentIndex > 0) ? currentIndex - 1 : images.length - 1;
+                showImage(currentIndex);
+            });
+
+            nextButton.addEventListener('click', () => {
+                currentIndex = (currentIndex < images.length - 1) ? currentIndex + 1 : 0;
+                showImage(currentIndex);
+            });
+        } else {
+            if (prevButton) prevButton.style.display = 'none';
+            if (nextButton) nextButton.style.display = 'none';
+        }
+    });
 });`;
   }, []);
 
@@ -1283,6 +1519,8 @@ body {
         return 'bg-gray-900 text-white';
       case 'modern':
         return 'bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 text-white';
+      case 'glassmorphism':
+        return 'bg-gradient-to-br from-gray-700 via-gray-900 to-black text-white';
       default:
         return 'bg-white text-gray-900';
     }
@@ -1573,6 +1811,32 @@ body {
                       onChange={(e) => updateProject(project.id, 'technologies', e.target.value.split(', ').filter(Boolean))}
                       placeholder="Technologies used (comma-separated)"
                     />
+
+                    <div>
+                      <Label>Project Images</Label>
+                      <Input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={(e) => handleProjectImageUpload(project.id, e.target.files)}
+                        className="mt-1"
+                      />
+                      <div className="flex gap-2 mt-2 flex-wrap">
+                        {project.images.map((image, index) => (
+                          <div key={index} className="relative">
+                            <img src={image} alt={`Project image ${index + 1}`} className="w-20 h-20 object-cover rounded-md border" />
+                            <Button
+                              size="icon"
+                              variant="destructive"
+                              className="absolute -top-2 -right-2 w-6 h-6 rounded-full"
+                              onClick={() => handleRemoveProjectImage(project.id, index)}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </Card>
               ))}
@@ -1672,6 +1936,38 @@ body {
           </div>
         );
 
+      case 'contact':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div>
+                <Label htmlFor="contactEnabled" className="font-semibold">Enable Contact Form</Label>
+                <p className="text-xs text-muted-foreground">
+                  Adds a contact form to your portfolio.
+                </p>
+              </div>
+              <Switch
+                id="contactEnabled"
+                checked={portfolioData.contact.enabled}
+                onCheckedChange={(checked) => handleInputChange('contact', { ...portfolioData.contact, enabled: checked })}
+              />
+            </div>
+            {portfolioData.contact.enabled && (
+              <div className="space-y-2">
+                <Label htmlFor="formspreeEndpoint">Formspree Endpoint</Label>
+                <Input
+                  id="formspreeEndpoint"
+                  value={portfolioData.contact.formspreeEndpoint}
+                  onChange={(e) => handleInputChange('contact', { ...portfolioData.contact, formspreeEndpoint: e.target.value })}
+                  placeholder="https://formspree.io/f/your_form_id"
+                />
+                <p className="text-sm text-muted-foreground">
+                  Get your endpoint from <a href="https://formspree.io" target="_blank" rel="noopener noreferrer" className="underline text-primary">Formspree</a>.
+                </p>
+              </div>
+            )}
+          </div>
+        );
       default:
         return (
           <div className="text-center py-8 text-muted-foreground">
@@ -1680,6 +1976,222 @@ body {
         );
     }
   };
+
+  const PortfolioPreview = ({ isFullscreen = false }) => (
+    <div className={`relative ${isFullscreen ? 'h-full' : 'min-h-[600px] max-h-[calc(100vh-200px)]'} overflow-y-auto rounded-lg ${getThemeClasses(currentTheme)} autobio-transition`}>
+      {/* 3D Background */}
+      <div className="absolute inset-0 h-64">
+        <Scene3D theme={currentTheme} />
+      </div>
+
+      {/* Hero Section Preview */}
+      <div className="relative z-10 p-8 text-center space-y-6">
+        {/* Profile Picture */}
+        <motion.div
+          className="flex justify-center"
+          animate={{ y: [0, -10, 0] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+        >
+          {portfolioData.profilePicture ? (
+            <img
+              src={portfolioData.profilePicture}
+              alt="Profile"
+              className="w-32 h-32 rounded-full object-cover border-4 border-primary shadow-glow"
+            />
+          ) : (
+            <div className="w-32 h-32 rounded-full bg-muted flex items-center justify-center text-4xl opacity-50 border-4 border-primary">
+              👤
+            </div>
+          )}
+        </motion.div>
+
+        {/* Hero Content */}
+        <div className="space-y-4">
+          <motion.h1
+            className="text-3xl font-bold font-display text-primary"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            {portfolioData.heroTitle}
+          </motion.h1>
+
+          <motion.h2
+            className="text-xl font-semibold"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            {portfolioData.heroSubtitle}
+          </motion.h2>
+
+          <motion.p
+            className="text-sm opacity-80 leading-relaxed"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+          >
+            {portfolioData.heroDescription}
+          </motion.p>
+        </div>
+
+        {/* Action Buttons */}
+        <motion.div
+          className="flex justify-center gap-3 flex-wrap"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.6 }}
+        >
+          <Button className="autobio-transition hover:scale-105">
+            <Play className="w-4 h-4 mr-2" />
+            View Work
+          </Button>
+          <Button variant="outline" className="autobio-transition hover:scale-105">
+            <Mail className="w-4 h-4 mr-2" />
+            Contact Me
+          </Button>
+        </motion.div>
+      </div>
+
+      {/* About Section Preview */}
+      <div className={`p-8 space-y-6 rounded-lg ${currentTheme === 'glassmorphism' ? 'bg-white/10 backdrop-blur-lg border border-white/20' : 'bg-background/50 backdrop-blur-sm'}`}>
+        <h3 className="text-lg font-semibold text-primary">About Me</h3>
+        <p className="text-sm opacity-80 leading-relaxed">
+          {portfolioData.bio}
+        </p>
+
+        {/* Quick Info */}
+        <div className="space-y-2 text-sm">
+          <div className="flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-primary" />
+            <span>{portfolioData.location}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Mail className="w-4 h-4 text-primary" />
+            <span>{portfolioData.email}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Skills Preview */}
+      {portfolioData.skills.length > 0 && (
+        <div className="p-8 space-y-4">
+          <h3 className="text-lg font-semibold text-primary">Skills</h3>
+          <div className="flex flex-wrap gap-2">
+            {portfolioData.skills.slice(0, 8).map((skill, index) => (
+              <motion.span
+                key={skill}
+                className="skill-tag autobio-transition"
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.3, delay: index * 0.1 }}
+              >
+                {skill}
+              </motion.span>
+            ))}
+            {portfolioData.skills.length > 8 && (
+              <span className="skill-tag opacity-60">
+                +{portfolioData.skills.length - 8} more
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+                  {/* Contact Form Preview */}
+                  {portfolioData.contact.enabled && (
+                    <div className="p-8 space-y-4">
+                      <h3 className="text-lg font-semibold text-primary">Get In Touch</h3>
+                      <div className="max-w-md mx-auto text-left">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <Input placeholder="Your Name" disabled className="bg-background/20 border-border" />
+                          <Input placeholder="Your Email" type="email" disabled className="bg-background/20 border-border" />
+                        </div>
+                        <Textarea placeholder="Your Message" disabled className="bg-background/20 border-border mb-4" />
+                        <Button className="w-full" disabled>
+                          <Send className="w-4 h-4 mr-2" />
+                          Send Message
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+      {/* Projects Preview */}
+      {portfolioData.projects.length > 0 && (
+        <div className="p-8 space-y-4">
+          <h3 className="text-lg font-semibold text-primary">Featured Projects</h3>
+          <div className="space-y-4">
+            {portfolioData.projects.slice(0, 2).map((project, index) => (
+              <motion.div
+                key={project.id}
+                            className={`rounded-lg p-4 ${currentTheme === 'glassmorphism' ? 'bg-white/10 backdrop-blur-lg border border-white/20' : 'bg-background/50 backdrop-blur-sm border border-border'}`}
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.5, delay: index * 0.2 }}
+              >
+                                {project.images && project.images.length > 0 && (
+                                  <Carousel className="w-full rounded-lg overflow-hidden mb-4">
+                                    <CarouselContent>
+                                      {project.images.map((image, index) => (
+                                        <CarouselItem key={index}>
+                                          <img src={image} alt={`Project image ${index + 1}`} className="w-full h-40 object-cover" />
+                                        </CarouselItem>
+                                      ))}
+                                    </CarouselContent>
+                                    {project.images.length > 1 && (
+                                      <>
+                                        <CarouselPrevious className="left-2" />
+                                        <CarouselNext className="right-2" />
+                                      </>
+                                    )}
+                                  </Carousel>
+                                )}
+                <div className="flex items-start justify-between mb-2">
+                  <h4 className="font-medium">{project.title || 'Project Title'}</h4>
+                  {project.featured && (
+                    <Star className="w-4 h-4 text-primary fill-current" />
+                  )}
+                </div>
+                <p className="text-sm opacity-70 mb-3">
+                  {project.description || 'Project description goes here...'}
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {project.technologies.slice(0, 3).map((tech, techIndex) => (
+                    <span key={techIndex} className="px-2 py-1 bg-primary/10 text-primary rounded text-xs">
+                      {tech}
+                    </span>
+                  ))}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Social Links */}
+      {portfolioData.socialLinks.length > 0 && (
+        <div className="p-8 space-y-4">
+          <h3 className="text-lg font-semibold text-primary">Connect With Me</h3>
+          <div className="flex justify-center gap-3 flex-wrap">
+            {portfolioData.socialLinks.map((link, index) => {
+              const IconComponent = getIconComponent(link.icon);
+              return (
+                <motion.div
+                  key={link.id}
+                  className="social-icon autobio-transition hover:scale-110"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.3, delay: index * 0.1 }}
+                >
+                  <IconComponent className="w-5 h-5" />
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
@@ -1731,6 +2243,14 @@ body {
                   className="autobio-transition"
                 >
                   <Palette className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant={currentTheme === 'glassmorphism' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setCurrentTheme('glassmorphism')}
+                  className="autobio-transition"
+                >
+                  <Container className="w-4 h-4" />
                 </Button>
               </div>
               
@@ -1821,191 +2341,24 @@ body {
             className="lg:col-span-4"
           >
             <Card className="autobio-transition hover:shadow-lg sticky top-24">
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <Monitor className="w-5 h-5 text-primary" />
                   Live Preview
                 </CardTitle>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="icon">
+                      <Expand className="w-4 h-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-full h-screen w-full p-0 border-0">
+                    <PortfolioPreview isFullscreen={true} />
+                  </DialogContent>
+                </Dialog>
               </CardHeader>
               <CardContent className="p-0">
-                <div className={`relative min-h-[600px] max-h-[calc(100vh-200px)] overflow-y-auto rounded-lg ${getThemeClasses(currentTheme)} autobio-transition`}>
-                  {/* 3D Background */}
-                  <div className="absolute inset-0 h-64">
-                    <Scene3D theme={currentTheme} />
-                  </div>
-                  
-                  {/* Hero Section Preview */}
-                  <div className="relative z-10 p-8 text-center space-y-6">
-                    {/* Profile Picture */}
-                    <motion.div 
-                      className="flex justify-center"
-                      animate={{ y: [0, -10, 0] }}
-                      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                    >
-                      {portfolioData.profilePicture ? (
-                        <img
-                          src={portfolioData.profilePicture}
-                          alt="Profile"
-                          className="w-32 h-32 rounded-full object-cover border-4 border-primary shadow-glow"
-                        />
-                      ) : (
-                        <div className="w-32 h-32 rounded-full bg-muted flex items-center justify-center text-4xl opacity-50 border-4 border-primary">
-                          👤
-                        </div>
-                      )}
-                    </motion.div>
-
-                    {/* Hero Content */}
-                    <div className="space-y-4">
-                      <motion.h1 
-                        className="text-3xl font-bold font-display text-primary"
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ duration: 0.5 }}
-                      >
-                        {portfolioData.heroTitle}
-                      </motion.h1>
-                      
-                      <motion.h2 
-                        className="text-xl font-semibold"
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ duration: 0.5, delay: 0.2 }}
-                      >
-                        {portfolioData.heroSubtitle}
-                      </motion.h2>
-                      
-                      <motion.p 
-                        className="text-sm opacity-80 leading-relaxed"
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ duration: 0.5, delay: 0.4 }}
-                      >
-                        {portfolioData.heroDescription}
-                      </motion.p>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <motion.div 
-                      className="flex justify-center gap-3 flex-wrap"
-                      initial={{ y: 20, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ duration: 0.5, delay: 0.6 }}
-                    >
-                      <Button className="autobio-transition hover:scale-105">
-                        <Play className="w-4 h-4 mr-2" />
-                        View Work
-                      </Button>
-                      <Button variant="outline" className="autobio-transition hover:scale-105">
-                        <Mail className="w-4 h-4 mr-2" />
-                        Contact Me
-                      </Button>
-                    </motion.div>
-                  </div>
-
-                  {/* About Section Preview */}
-                  <div className="p-8 space-y-6 bg-background/50 backdrop-blur-sm">
-                    <h3 className="text-lg font-semibold text-primary">About Me</h3>
-                    <p className="text-sm opacity-80 leading-relaxed">
-                      {portfolioData.bio}
-                    </p>
-                    
-                    {/* Quick Info */}
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-primary" />
-                        <span>{portfolioData.location}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Mail className="w-4 h-4 text-primary" />
-                        <span>{portfolioData.email}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Skills Preview */}
-                  {portfolioData.skills.length > 0 && (
-                    <div className="p-8 space-y-4">
-                      <h3 className="text-lg font-semibold text-primary">Skills</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {portfolioData.skills.slice(0, 8).map((skill, index) => (
-                          <motion.span
-                            key={skill}
-                            className="skill-tag autobio-transition"
-                            initial={{ scale: 0, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            transition={{ duration: 0.3, delay: index * 0.1 }}
-                          >
-                            {skill}
-                          </motion.span>
-                        ))}
-                        {portfolioData.skills.length > 8 && (
-                          <span className="skill-tag opacity-60">
-                            +{portfolioData.skills.length - 8} more
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Projects Preview */}
-                  {portfolioData.projects.length > 0 && (
-                    <div className="p-8 space-y-4">
-                      <h3 className="text-lg font-semibold text-primary">Featured Projects</h3>
-                      <div className="space-y-4">
-                        {portfolioData.projects.slice(0, 2).map((project, index) => (
-                          <motion.div
-                            key={project.id}
-                            className="bg-background/50 backdrop-blur-sm rounded-lg p-4 border border-border"
-                            initial={{ y: 20, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            transition={{ duration: 0.5, delay: index * 0.2 }}
-                          >
-                            <div className="flex items-start justify-between mb-2">
-                              <h4 className="font-medium">{project.title || 'Project Title'}</h4>
-                              {project.featured && (
-                                <Star className="w-4 h-4 text-primary fill-current" />
-                              )}
-                            </div>
-                            <p className="text-sm opacity-70 mb-3">
-                              {project.description || 'Project description goes here...'}
-                            </p>
-                            <div className="flex flex-wrap gap-1">
-                              {project.technologies.slice(0, 3).map((tech, techIndex) => (
-                                <span key={techIndex} className="px-2 py-1 bg-primary/10 text-primary rounded text-xs">
-                                  {tech}
-                                </span>
-                              ))}
-                            </div>
-                          </motion.div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Social Links */}
-                  {portfolioData.socialLinks.length > 0 && (
-                    <div className="p-8 space-y-4">
-                      <h3 className="text-lg font-semibold text-primary">Connect With Me</h3>
-                      <div className="flex justify-center gap-3 flex-wrap">
-                        {portfolioData.socialLinks.map((link, index) => {
-                          const IconComponent = getIconComponent(link.icon);
-                          return (
-                            <motion.div
-                              key={link.id}
-                              className="social-icon autobio-transition hover:scale-110"
-                              initial={{ scale: 0, opacity: 0 }}
-                              animate={{ scale: 1, opacity: 1 }}
-                              transition={{ duration: 0.3, delay: index * 0.1 }}
-                            >
-                              <IconComponent className="w-5 h-5" />
-                            </motion.div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <PortfolioPreview />
               </CardContent>
             </Card>
           </motion.div>

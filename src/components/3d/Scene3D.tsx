@@ -1,5 +1,5 @@
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, PerspectiveCamera, Environment } from '@react-three/drei';
+import { PerspectiveCamera, Environment } from '@react-three/drei';
 import { FloatingCube, FloatingSphere, FloatingTorus } from './FloatingGeometry';
 
 interface Scene3DProps {
@@ -39,7 +39,7 @@ export const Scene3D = ({ theme }: Scene3DProps) => {
   const colors = getColors();
 
   return (
-    <div className="w-full h-full absolute inset-0 pointer-events-none">
+    <div className="w-full h-full absolute inset-0">
       <Canvas>
         <PerspectiveCamera makeDefault position={[0, 0, 10]} />
         <Environment preset="city" />
@@ -56,16 +56,6 @@ export const Scene3D = ({ theme }: Scene3DProps) => {
         <FloatingCube position={[3, 1, -5]} color={colors.secondary} speed={0.6} />
         <FloatingSphere position={[-3, -2, -2]} color={colors.accent} speed={1.1} />
         <FloatingTorus position={[2, -3, -3]} color={colors.primary} speed={0.9} />
-
-        {/* Enable orbit controls but disable auto-rotate for better UX */}
-        <OrbitControls 
-          enableZoom={false} 
-          enablePan={false} 
-          enableRotate={true}
-          autoRotate={false}
-          maxPolarAngle={Math.PI / 2}
-          minPolarAngle={Math.PI / 2}
-        />
       </Canvas>
     </div>
   );
