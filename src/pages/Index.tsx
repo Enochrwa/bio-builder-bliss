@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,8 +14,8 @@ import {
   Facebook, Youtube, Upload, Palette, Monitor, Sun, Moon, Star, Calendar,
   MapPin, Building, GraduationCap, Award, FileText, User, Code2, 
   Briefcase, MessageSquare, BookOpen, ExternalLink, Play, Zap,
-  Rocket, Sparkles, Expand, Container, Send,
-  LucideIcon
+  Rocket, Sparkles, Expand, Container, Send, Menu, Home, FolderOpen,
+  ChevronRight, ArrowRight, CheckCircle, Eye, LucideIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Scene3D } from '@/components/3d/Scene3D';
@@ -48,7 +48,6 @@ interface Experience {
   endDate: string;
   description: string;
   location: string;
-  current: boolean;
 }
 
 interface Education {
@@ -135,63 +134,88 @@ const socialPlatforms = [
   { name: 'Email', icon: 'Mail', placeholder: 'your@email.com' },
   { name: 'Instagram', icon: 'Instagram', placeholder: 'https://instagram.com/username' },
   { name: 'Facebook', icon: 'Facebook', placeholder: 'https://facebook.com/username' },
-  { name: 'YouTube', icon: 'Youtube', placeholder: 'https://youtube.com/c/username' },
+  { name: 'YouTube', icon: 'Youtube', placeholder: 'https://youtube.com/@username' }
 ];
 
-const getIconComponent = (iconName: string) => {
-  const icons: { [key: string]: LucideIcon } = {
-    Github, Linkedin, Twitter, Globe, Mail, Instagram, Facebook, Youtube,
-  };
-  return icons[iconName] || Globe;
+const iconMap: Record<string, LucideIcon> = {
+  Github, Linkedin, Twitter, Globe, Mail, Instagram, Facebook, Youtube
 };
 
-const Index = () => {
+const themes = [
+  { id: 'light', name: 'Light', icon: Sun },
+  { id: 'dark', name: 'Dark', icon: Moon },
+  { id: 'modern', name: 'Modern', icon: Star },
+  { id: 'glassmorphism', name: 'Glass', icon: Sparkles }
+];
+
+// Navigation items for the portfolio
+const navigationSections = [
+  { id: 'hero', label: 'Home', icon: Home },
+  { id: 'about', label: 'About', icon: User },
+  { id: 'experience', label: 'Experience', icon: Briefcase },
+  { id: 'projects', label: 'Projects', icon: FolderOpen },
+  { id: 'skills', label: 'Skills', icon: Code2 },
+  { id: 'education', label: 'Education', icon: GraduationCap },
+  { id: 'testimonials', label: 'Testimonials', icon: MessageSquare },
+  { id: 'blog', label: 'Blog', icon: BookOpen },
+  { id: 'contact', label: 'Contact', icon: Mail }
+];
+
+export default function Index() {
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [currentTheme, setCurrentTheme] = useState<Theme>('light');
-  const [skillInput, setSkillInput] = useState('');
-  const [activeSection, setActiveSection] = useState('basic');
-  
+  const [currentTheme, setCurrentTheme] = useState<Theme>('modern');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [newSkill, setNewSkill] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [activeSection, setActiveSection] = useState('hero');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   const [portfolioData, setPortfolioData] = useState<PortfolioData>({
-    // Basic Info
-    name: 'Alex Johnson',
-    title: 'Full-Stack Developer',
-    bio: 'Passionate full-stack developer with 5+ years of experience building scalable web applications. I specialize in React, Node.js, and cloud technologies.',
+    name: 'Alex Thompson',
+    title: 'Full-Stack Developer & UI/UX Designer',
+    bio: 'Passionate developer with 5+ years of experience building modern web applications. I love creating beautiful, functional user experiences.',
     location: 'San Francisco, CA',
-    email: 'alex@example.com',
+    email: 'alex.thompson@email.com',
     phone: '+1 (555) 123-4567',
     profilePicture: '',
-    
-    // Hero Section
-    heroTitle: 'Building the Future, One Line of Code at a Time',
-    heroSubtitle: 'Full-Stack Developer & Tech Innovator',
-    heroDescription: 'I create beautiful, performant, and scalable web applications that solve real-world problems.',
-    
-    // Professional
+    heroTitle: 'Building Digital Experiences',
+    heroSubtitle: 'Full-Stack Developer & Creative Problem Solver',
+    heroDescription: 'I craft modern web applications with cutting-edge technologies, focusing on performance, user experience, and scalable solutions.',
     socialLinks: [
-      { id: '1', platform: 'GitHub', url: 'https://github.com/alexjohnson', icon: 'Github' },
-      { id: '2', platform: 'LinkedIn', url: 'https://linkedin.com/in/alexjohnson', icon: 'Linkedin' },
-      { id: '3', platform: 'Twitter', url: 'https://twitter.com/alexjohnson', icon: 'Twitter' },
+      { id: '1', platform: 'GitHub', url: 'https://github.com/alexthompson', icon: 'Github' },
+      { id: '2', platform: 'LinkedIn', url: 'https://linkedin.com/in/alexthompson', icon: 'Linkedin' },
+      { id: '3', platform: 'Twitter', url: 'https://twitter.com/alexthompson', icon: 'Twitter' },
+      { id: '4', platform: 'Website', url: 'https://alexthompson.dev', icon: 'Globe' }
     ],
-    skills: ['React', 'TypeScript', 'Node.js', 'Python', 'AWS', 'Docker', 'GraphQL', 'MongoDB'],
+    skills: ['React', 'TypeScript', 'Node.js', 'Python', 'AWS', 'Docker', 'GraphQL', 'PostgreSQL', 'Redux', 'Next.js', 'Tailwind CSS', 'MongoDB'],
     projects: [
       {
         id: '1',
         title: 'E-Commerce Platform',
-        description: 'A full-stack e-commerce solution with real-time inventory, payment processing, and admin dashboard.',
-        technologies: ['React', 'Node.js', 'PostgreSQL', 'Stripe'],
-        liveUrl: 'https://ecommerce-demo.com',
-        githubUrl: 'https://github.com/alexjohnson/ecommerce',
+        description: 'A modern e-commerce platform built with React, Node.js, and Stripe integration. Features include real-time inventory, advanced search, and admin dashboard.',
+        technologies: ['React', 'Node.js', 'PostgreSQL', 'Stripe', 'Redis'],
+        liveUrl: 'https://demo-store.vercel.app',
+        githubUrl: 'https://github.com/alexthompson/ecommerce',
         images: [],
         featured: true
       },
       {
         id: '2',
         title: 'Task Management App',
-        description: 'Collaborative task management application with real-time updates and team features.',
-        technologies: ['Vue.js', 'Express', 'Socket.io', 'MongoDB'],
-        liveUrl: 'https://taskapp-demo.com',
-        githubUrl: 'https://github.com/alexjohnson/taskapp',
+        description: 'A collaborative task management application with real-time updates, team collaboration, and advanced filtering capabilities.',
+        technologies: ['React', 'TypeScript', 'Firebase', 'Material-UI'],
+        liveUrl: 'https://taskflow-demo.netlify.app',
+        githubUrl: 'https://github.com/alexthompson/taskflow',
+        images: [],
+        featured: true
+      },
+      {
+        id: '3',
+        title: 'Weather Dashboard',
+        description: 'A responsive weather dashboard with location-based forecasts, interactive maps, and weather alerts.',
+        technologies: ['Vue.js', 'OpenWeather API', 'Chart.js', 'Tailwind CSS'],
+        liveUrl: 'https://weather-hub.surge.sh',
+        githubUrl: 'https://github.com/alexthompson/weather-dashboard',
         images: [],
         featured: false
       }
@@ -199,23 +223,21 @@ const Index = () => {
     experience: [
       {
         id: '1',
-        company: 'TechCorp Inc.',
+        company: 'TechFlow Inc.',
         position: 'Senior Full-Stack Developer',
         startDate: '2022-01',
-        endDate: '',
-        current: true,
-        location: 'San Francisco, CA',
-        description: 'Lead development of customer-facing web applications serving 1M+ users. Mentored junior developers and improved deployment processes.'
+        endDate: 'Present',
+        description: 'Lead development of scalable web applications serving 100k+ users. Mentored junior developers and established best practices for code quality and deployment.',
+        location: 'San Francisco, CA'
       },
       {
         id: '2',
         company: 'StartupXYZ',
-        position: 'Full-Stack Developer',
-        startDate: '2020-03',
+        position: 'Frontend Developer',
+        startDate: '2020-06',
         endDate: '2021-12',
-        current: false,
-        location: 'Remote',
-        description: 'Built MVP from scratch and scaled to support 100K+ users. Implemented CI/CD pipelines and testing frameworks.'
+        description: 'Built responsive web applications using React and TypeScript. Collaborated with design team to implement pixel-perfect UI components.',
+        location: 'Remote'
       }
     ],
     education: [
@@ -226,7 +248,7 @@ const Index = () => {
         field: 'Computer Science',
         startDate: '2016-09',
         endDate: '2020-05',
-        description: 'Graduated Magna Cum Laude. Relevant coursework: Data Structures, Algorithms, Database Systems, Software Engineering.'
+        description: 'Focused on software engineering, data structures, and algorithms. Graduated Magna Cum Laude.'
       }
     ],
     certifications: [
@@ -234,18 +256,35 @@ const Index = () => {
         id: '1',
         name: 'AWS Certified Solutions Architect',
         issuer: 'Amazon Web Services',
-        date: '2023-06',
-        credentialId: 'AWS-CSA-123456',
+        date: '2023-03',
+        credentialId: 'AWS-ASA-2023-001',
         url: 'https://aws.amazon.com/certification/'
+      },
+      {
+        id: '2',
+        name: 'Google Cloud Professional Developer',
+        issuer: 'Google Cloud',
+        date: '2022-11',
+        credentialId: 'GCP-PD-2022-001',
+        url: 'https://cloud.google.com/certification/'
       }
     ],
     testimonials: [
       {
         id: '1',
-        name: 'Sarah Chen',
+        name: 'Sarah Johnson',
         position: 'Product Manager',
-        company: 'TechCorp Inc.',
-        content: 'Alex is an exceptional developer who consistently delivers high-quality code. Their ability to understand complex requirements and translate them into elegant solutions is remarkable.',
+        company: 'TechFlow Inc.',
+        content: 'Alex is an exceptional developer who consistently delivers high-quality code. His attention to detail and problem-solving skills are outstanding.',
+        avatar: '',
+        rating: 5
+      },
+      {
+        id: '2',
+        name: 'Mike Chen',
+        position: 'CTO',
+        company: 'StartupXYZ',
+        content: 'Working with Alex was a pleasure. He brought fresh ideas and modern development practices that significantly improved our product.',
         avatar: '',
         rating: 5
       }
@@ -254,450 +293,518 @@ const Index = () => {
       {
         id: '1',
         title: 'Building Scalable React Applications',
-        excerpt: 'Learn the best practices for building React applications that can scale to millions of users.',
-        url: 'https://blog.example.com/scalable-react',
-        publishDate: '2023-12-01',
-        readTime: '8 min read'
+        excerpt: 'Learn best practices for structuring large-scale React applications with TypeScript and modern tooling.',
+        url: 'https://blog.alexthompson.dev/scalable-react',
+        publishDate: '2024-01-15',
+        readTime: '8 min'
+      },
+      {
+        id: '2',
+        title: 'Modern CSS Techniques for 2024',
+        excerpt: 'Explore the latest CSS features including container queries, cascade layers, and new color functions.',
+        url: 'https://blog.alexthompson.dev/modern-css-2024',
+        publishDate: '2024-01-08',
+        readTime: '6 min'
       }
     ],
     languages: [
       { name: 'English', proficiency: 'Native' },
-      { name: 'Spanish', proficiency: 'Conversational' }
+      { name: 'Spanish', proficiency: 'Conversational' },
+      { name: 'French', proficiency: 'Beginner' }
     ],
-    interests: ['Open Source', 'Machine Learning', 'Photography', 'Rock Climbing'],
-    availability: 'Available for freelance projects',
+    interests: ['Photography', 'Rock Climbing', 'Open Source', 'AI/ML', 'Travel'],
+    availability: 'Available for new opportunities',
     timezone: 'PST (UTC-8)',
     contact: {
       enabled: true,
-      formspreeEndpoint: 'https://formspree.io/f/your_form_id'
+      formspreeEndpoint: 'https://formspree.io/f/your-form-id'
     }
   });
 
-  const sections = [
-    { id: 'basic', label: 'Basic Info', icon: User },
-    { id: 'hero', label: 'Hero Section', icon: Rocket },
-    { id: 'projects', label: 'Projects', icon: Code2 },
-    { id: 'experience', label: 'Experience', icon: Briefcase },
-    { id: 'education', label: 'Education', icon: GraduationCap },
-    { id: 'certifications', label: 'Certifications', icon: Award },
-    { id: 'testimonials', label: 'Testimonials', icon: MessageSquare },
-    { id: 'blog', label: 'Blog Posts', icon: BookOpen },
-    { id: 'contact', label: 'Contact Form', icon: Send },
-  ];
+  // Scroll spy functionality
+  useEffect(() => {
+    const handleScroll = () => {
+      const sections = navigationSections.map(section => section.id);
+      const scrollPosition = window.scrollY + 100;
 
-  const handleInputChange = (field: keyof PortfolioData, value: PortfolioData[keyof PortfolioData]) => {
-    setPortfolioData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+      for (const sectionId of sections) {
+        const element = document.getElementById(`preview-${sectionId}`);
+        if (element) {
+          const { offsetTop, offsetHeight } = element;
+          if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
+            setActiveSection(sectionId);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(`preview-${sectionId}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    setMobileMenuOpen(false);
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        handleInputChange('profilePicture', result);
-      };
-      reader.readAsDataURL(file);
+  const getThemeClasses = (theme: Theme) => {
+    switch (theme) {
+      case 'light':
+        return 'bg-background text-foreground';
+      case 'dark':
+        return 'bg-gray-900 text-gray-100';
+      case 'modern':
+        return 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white';
+      case 'glassmorphism':
+        return 'bg-gradient-to-br from-cyan-400 via-purple-500 to-pink-500 text-white';
+      default:
+        return 'bg-background text-foreground';
     }
   };
 
   const addSocialLink = () => {
     const newLink: SocialLink = {
       id: Date.now().toString(),
-      platform: 'Website',
+      platform: 'GitHub',
       url: '',
-      icon: 'Globe'
+      icon: 'Github'
     };
-    handleInputChange('socialLinks', [...portfolioData.socialLinks, newLink]);
-  };
-
-  const updateSocialLink = (id: string, field: 'platform' | 'url', value: string) => {
-    const updatedLinks = portfolioData.socialLinks.map(link => {
-      if (link.id === id) {
-        if (field === 'platform') {
-          const platform = socialPlatforms.find(p => p.name === value);
-          return { ...link, platform: value, icon: platform?.icon || 'Globe' };
-        }
-        return { ...link, [field]: value };
-      }
-      return link;
-    });
-    handleInputChange('socialLinks', updatedLinks);
+    setPortfolioData(prev => ({
+      ...prev,
+      socialLinks: [...prev.socialLinks, newLink]
+    }));
   };
 
   const removeSocialLink = (id: string) => {
-    const filteredLinks = portfolioData.socialLinks.filter(link => link.id !== id);
-    handleInputChange('socialLinks', filteredLinks);
+    setPortfolioData(prev => ({
+      ...prev,
+      socialLinks: prev.socialLinks.filter(link => link.id !== id)
+    }));
+  };
+
+  const updateSocialLink = (id: string, field: keyof SocialLink, value: string) => {
+    setPortfolioData(prev => ({
+      ...prev,
+      socialLinks: prev.socialLinks.map(link =>
+        link.id === id ? { ...link, [field]: value } : link
+      )
+    }));
   };
 
   const addSkill = () => {
-    if (skillInput.trim() && !portfolioData.skills.includes(skillInput.trim())) {
-      handleInputChange('skills', [...portfolioData.skills, skillInput.trim()]);
-      setSkillInput('');
+    if (newSkill.trim() && !portfolioData.skills.includes(newSkill.trim())) {
+      setPortfolioData(prev => ({
+        ...prev,
+        skills: [...prev.skills, newSkill.trim()]
+      }));
+      setNewSkill('');
     }
   };
 
-  const removeSkill = (skillToRemove: string) => {
-    const filteredSkills = portfolioData.skills.filter(skill => skill !== skillToRemove);
-    handleInputChange('skills', filteredSkills);
+  const removeSkill = (skill: string) => {
+    setPortfolioData(prev => ({
+      ...prev,
+      skills: prev.skills.filter(s => s !== skill)
+    }));
   };
 
-  const handleSkillKeyPress = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      addSkill();
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPortfolioData(prev => ({
+          ...prev,
+          profilePicture: e.target?.result as string
+        }));
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  const addProject = () => {
-    const newProject: Project = {
-      id: Date.now().toString(),
-      title: '',
-      description: '',
-      technologies: [],
-      liveUrl: '',
-      githubUrl: '',
-      images: [],
-      featured: false
-    };
-    handleInputChange('projects', [...portfolioData.projects, newProject]);
-  };
-
-  const updateProject = (id: string, field: keyof Project, value: Project[keyof Project]) => {
-    const updatedProjects = portfolioData.projects.map(project => 
-      project.id === id ? { ...project, [field]: value } : project
-    );
-    handleInputChange('projects', updatedProjects);
-  };
-
-  const removeProject = (id: string) => {
-    const filteredProjects = portfolioData.projects.filter(project => project.id !== id);
-    handleInputChange('projects', filteredProjects);
-  };
-
-  const handleProjectImageUpload = (projectId: string, files: FileList | null) => {
-    if (!files) return;
-    const newImages: string[] = [];
-    const promises = Array.from(files).map(file => {
-      return new Promise<void>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          newImages.push(e.target?.result as string);
-          resolve();
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    });
-
-    Promise.all(promises).then(() => {
-      const updatedProjects = portfolioData.projects.map(p => {
-        if (p.id === projectId) {
-          return { ...p, images: [...p.images, ...newImages] };
-        }
-        return p;
-      });
-      handleInputChange('projects', updatedProjects);
-    });
-  };
-
-  const handleRemoveProjectImage = (projectId: string, imageIndex: number) => {
-    const updatedProjects = portfolioData.projects.map(p => {
-      if (p.id === projectId) {
-        const updatedImages = p.images.filter((_, index) => index !== imageIndex);
-        return { ...p, images: updatedImages };
-      }
-      return p;
-    });
-    handleInputChange('projects', updatedProjects);
-  };
-
-  const addExperience = () => {
-    const newExperience: Experience = {
-      id: Date.now().toString(),
-      company: '',
-      position: '',
-      startDate: '',
-      endDate: '',
-      current: false,
-      location: '',
-      description: ''
-    };
-    handleInputChange('experience', [...portfolioData.experience, newExperience]);
-  };
-
-  const updateExperience = (id: string, field: keyof Experience, value: Experience[keyof Experience]) => {
-    const updatedExperience = portfolioData.experience.map(exp => 
-      exp.id === id ? { ...exp, [field]: value } : exp
-    );
-    handleInputChange('experience', updatedExperience);
-  };
-
-  const removeExperience = (id: string) => {
-    const filteredExperience = portfolioData.experience.filter(exp => exp.id !== id);
-    handleInputChange('experience', filteredExperience);
-  };
-
-  const generatePortfolioHTML = useCallback((data: PortfolioData, theme: Theme) => {
-    const themeStyles = {
-      light: {
-        background: '#ffffff',
-        text: '#1f2937',
-        card: '#f9fafb',
-        accent: '#8b5cf6',
-        border: '#e5e7eb'
-      },
-      dark: {
-        background: '#111827',
-        text: '#f9fafb',
-        card: '#1f2937',
-        accent: '#8b5cf6',
-        border: '#374151'
-      },
-      modern: {
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        text: '#ffffff',
-        card: 'rgba(255, 255, 255, 0.1)',
-        accent: '#fbbf24',
-        border: 'rgba(255, 255, 255, 0.2)'
-      }
-    };
-
-    return `<!DOCTYPE html>
+  const generatePortfolioFiles = useCallback(async () => {
+    setIsGenerating(true);
+    
+    try {
+      // Generate HTML
+      const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${data.name} - ${data.title}</title>
-    <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <title>${portfolioData.name} - Portfolio</title>
+    <link href="styles.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body>
+<body class="theme-${currentTheme}">
     <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-container">
-            <div class="nav-brand">${data.name}</div>
-            <div class="nav-links">
-                <a href="#hero" class="nav-link">Home</a>
-                <a href="#about" class="nav-link">About</a>
-                <a href="#projects" class="nav-link">Projects</a>
-                <a href="#experience" class="nav-link">Experience</a>
-                <a href="#contact" class="nav-link">Contact</a>
+            <div class="nav-logo">
+                <span>${portfolioData.name}</span>
+            </div>
+            <div class="nav-menu" id="nav-menu">
+                ${navigationSections.map(section => `
+                    <a href="#${section.id}" class="nav-link" data-section="${section.id}">
+                        <i class="fas fa-${getIconClass(section.icon)}"></i>
+                        <span>${section.label}</span>
+                    </a>
+                `).join('')}
+            </div>
+            <div class="nav-toggle" id="nav-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
             </div>
         </div>
     </nav>
 
     <!-- Hero Section -->
-    <section id="hero" class="hero-section">
+    <section id="hero" class="hero">
         <div class="hero-container">
             <div class="hero-content">
-                <h1 class="hero-title">${data.heroTitle}</h1>
-                <h2 class="hero-subtitle">${data.heroSubtitle}</h2>
-                <p class="hero-description">${data.heroDescription}</p>
-                <div class="hero-actions">
-                    <a href="#projects" class="btn-primary">View My Work</a>
-                    <a href="#contact" class="btn-secondary">Get In Touch</a>
+                ${portfolioData.profilePicture ? `
+                    <div class="hero-image">
+                        <img src="${portfolioData.profilePicture}" alt="${portfolioData.name}" />
+                    </div>
+                ` : ''}
+                <h1 class="hero-title">${portfolioData.heroTitle}</h1>
+                <p class="hero-subtitle">${portfolioData.heroSubtitle}</p>
+                <p class="hero-description">${portfolioData.heroDescription}</p>
+                <div class="hero-cta">
+                    <a href="#projects" class="btn btn-primary">View My Work</a>
+                    <a href="#contact" class="btn btn-secondary">Get In Touch</a>
+                </div>
+                <div class="hero-social">
+                    ${portfolioData.socialLinks.map(link => `
+                        <a href="${link.url}" target="_blank" class="social-link">
+                            <i class="fab fa-${getSocialIcon(link.platform)}"></i>
+                        </a>
+                    `).join('')}
                 </div>
             </div>
-            ${data.profilePicture ? `
-            <div class="hero-image">
-                <img src="data:image/jpeg;base64,${data.profilePicture.split(',')[1]}" alt="${data.name}" class="profile-image-hero">
-            </div>
-            ` : ''}
         </div>
     </section>
 
     <!-- About Section -->
-    <section id="about" class="about-section">
+    <section id="about" class="about">
         <div class="container">
             <h2 class="section-title">About Me</h2>
             <div class="about-content">
                 <div class="about-text">
-                    <p class="about-bio">${data.bio}</p>
-                    <div class="about-details">
-                        <div class="detail-item">
-                            <strong>Location:</strong> ${data.location}
+                    <p>${portfolioData.bio}</p>
+                    <div class="about-info">
+                        <div class="info-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>${portfolioData.location}</span>
                         </div>
-                        <div class="detail-item">
-                            <strong>Email:</strong> ${data.email}
+                        <div class="info-item">
+                            <i class="fas fa-envelope"></i>
+                            <span>${portfolioData.email}</span>
                         </div>
-                        <div class="detail-item">
-                            <strong>Availability:</strong> ${data.availability}
+                        <div class="info-item">
+                            <i class="fas fa-clock"></i>
+                            <span>${portfolioData.availability}</span>
                         </div>
                     </div>
                 </div>
-                <div class="skills-section">
-                    <h3>Skills & Technologies</h3>
-                    <div class="skills-grid">
-                        ${data.skills.map(skill => `<span class="skill-tag">${skill}</span>`).join('')}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Projects Section -->
-    <section id="projects" class="projects-section">
-        <div class="container">
-            <h2 class="section-title">Featured Projects</h2>
-            <div class="projects-grid">
-                ${data.projects.map(project => `
-                <div class="project-card ${project.featured ? 'featured' : ''}">
-                    ${project.images && project.images.length > 0 ? `
-                    <div class="project-image-gallery">
-                        <div class="gallery-images">
-                            ${project.images.map(image => `<img src="${image}" alt="${project.title} image" class="gallery-image">`).join('')}
-                        </div>
-                        ${project.images.length > 1 ? `
-                        <button class="gallery-prev">&lt;</button>
-                        <button class="gallery-next">&gt;</button>
-                        ` : ''}
-                    </div>
-                    ` : ''}
-                    <div class="project-header">
-                        <h3 class="project-title">${project.title}</h3>
-                        <div class="project-links">
-                            ${project.liveUrl ? `<a href="${project.liveUrl}" class="project-link" target="_blank">Live Demo</a>` : ''}
-                            ${project.githubUrl ? `<a href="${project.githubUrl}" class="project-link" target="_blank">GitHub</a>` : ''}
-                        </div>
-                    </div>
-                    <p class="project-description">${project.description}</p>
-                    <div class="project-tech">
-                        ${project.technologies.map(tech => `<span class="tech-tag">${tech}</span>`).join('')}
-                    </div>
-                </div>
-                `).join('')}
             </div>
         </div>
     </section>
 
     <!-- Experience Section -->
-    <section id="experience" class="experience-section">
+    <section id="experience" class="experience">
         <div class="container">
-            <h2 class="section-title">Professional Experience</h2>
+            <h2 class="section-title">Experience</h2>
             <div class="timeline">
-                ${data.experience.map(exp => `
-                <div class="timeline-item">
-                    <div class="timeline-marker"></div>
-                    <div class="timeline-content">
-                        <h3 class="timeline-title">${exp.position}</h3>
-                        <h4 class="timeline-subtitle">${exp.company} • ${exp.location}</h4>
-                        <div class="timeline-date">${exp.startDate} - ${exp.current ? 'Present' : exp.endDate}</div>
-                        <p class="timeline-description">${exp.description}</p>
+                ${portfolioData.experience.map(exp => `
+                    <div class="timeline-item">
+                        <div class="timeline-content">
+                            <h3>${exp.position}</h3>
+                            <h4>${exp.company}</h4>
+                            <p class="timeline-date">${exp.startDate} - ${exp.endDate}</p>
+                            <p class="timeline-location">${exp.location}</p>
+                            <p class="timeline-description">${exp.description}</p>
+                        </div>
                     </div>
+                `).join('')}
+            </div>
+        </div>
+    </section>
+
+    <!-- Projects Section -->
+    <section id="projects" class="projects">
+        <div class="container">
+            <h2 class="section-title">Featured Projects</h2>
+            <div class="projects-grid">
+                ${portfolioData.projects.filter(p => p.featured).map(project => `
+                    <div class="project-card">
+                        <div class="project-content">
+                            <h3>${project.title}</h3>
+                            <p>${project.description}</p>
+                            <div class="project-tech">
+                                ${project.technologies.map(tech => `<span class="tech-tag">${tech}</span>`).join('')}
+                            </div>
+                            <div class="project-links">
+                                <a href="${project.liveUrl}" target="_blank" class="project-link">
+                                    <i class="fas fa-external-link-alt"></i> Live Demo
+                                </a>
+                                <a href="${project.githubUrl}" target="_blank" class="project-link">
+                                    <i class="fab fa-github"></i> Code
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    </section>
+
+    <!-- Skills Section -->
+    <section id="skills" class="skills">
+        <div class="container">
+            <h2 class="section-title">Skills & Technologies</h2>
+            <div class="skills-grid">
+                ${portfolioData.skills.map(skill => `
+                    <div class="skill-item">${skill}</div>
+                `).join('')}
+            </div>
+        </div>
+    </section>
+
+    <!-- Education Section -->
+    <section id="education" class="education">
+        <div class="container">
+            <h2 class="section-title">Education & Certifications</h2>
+            <div class="education-content">
+                <div class="education-list">
+                    ${portfolioData.education.map(edu => `
+                        <div class="education-item">
+                            <h3>${edu.degree} in ${edu.field}</h3>
+                            <h4>${edu.institution}</h4>
+                            <p class="education-date">${edu.startDate} - ${edu.endDate}</p>
+                            <p>${edu.description}</p>
+                        </div>
+                    `).join('')}
                 </div>
+                <div class="certifications-list">
+                    ${portfolioData.certifications.map(cert => `
+                        <div class="certification-item">
+                            <h3>${cert.name}</h3>
+                            <p>${cert.issuer} • ${cert.date}</p>
+                            <a href="${cert.url}" target="_blank">View Certificate</a>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section id="testimonials" class="testimonials">
+        <div class="container">
+            <h2 class="section-title">What People Say</h2>
+            <div class="testimonials-grid">
+                ${portfolioData.testimonials.map(testimonial => `
+                    <div class="testimonial-card">
+                        <div class="testimonial-content">
+                            <div class="testimonial-stars">
+                                ${Array.from({length: testimonial.rating}, () => '<i class="fas fa-star"></i>').join('')}
+                            </div>
+                            <p>"${testimonial.content}"</p>
+                            <div class="testimonial-author">
+                                <strong>${testimonial.name}</strong>
+                                <span>${testimonial.position} at ${testimonial.company}</span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    </section>
+
+    <!-- Blog Section -->
+    <section id="blog" class="blog">
+        <div class="container">
+            <h2 class="section-title">Latest Blog Posts</h2>
+            <div class="blog-grid">
+                ${portfolioData.blogPosts.map(post => `
+                    <article class="blog-card">
+                        <h3>${post.title}</h3>
+                        <p>${post.excerpt}</p>
+                        <div class="blog-meta">
+                            <span>${post.publishDate}</span>
+                            <span>${post.readTime} read</span>
+                        </div>
+                        <a href="${post.url}" target="_blank" class="blog-link">Read More</a>
+                    </article>
                 `).join('')}
             </div>
         </div>
     </section>
 
     <!-- Contact Section -->
-    <section id="contact" class="contact-section">
+    <section id="contact" class="contact">
         <div class="container">
             <h2 class="section-title">Let's Work Together</h2>
             <div class="contact-content">
                 <div class="contact-info">
-                    <div class="contact-item">
-                        <strong>Email:</strong> ${data.email}
-                    </div>
-                    ${data.phone ? `
-                    <div class="contact-item">
-                        <strong>Phone:</strong> ${data.phone}
-                    </div>
-                    ` : ''}
-                    <div class="contact-item">
-                        <strong>Location:</strong> ${data.location}
+                    <p>I'm always interested in new opportunities and exciting projects.</p>
+                    <div class="contact-methods">
+                        <a href="mailto:${portfolioData.email}" class="contact-method">
+                            <i class="fas fa-envelope"></i>
+                            <span>${portfolioData.email}</span>
+                        </a>
+                        ${portfolioData.phone ? `
+                            <a href="tel:${portfolioData.phone}" class="contact-method">
+                                <i class="fas fa-phone"></i>
+                                <span>${portfolioData.phone}</span>
+                            </a>
+                        ` : ''}
+                        <div class="contact-method">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>${portfolioData.location}</span>
+                        </div>
                     </div>
                 </div>
-                <div class="social-links">
-                    ${data.socialLinks.map(link => `
-                    <a href="${link.url}" target="_blank" rel="noopener noreferrer" class="social-link">
-                        <span class="social-icon">${link.platform}</span>
-                    </a>
+                <form class="contact-form" action="${portfolioData.contact.formspreeEndpoint}" method="POST">
+                    <div class="form-group">
+                        <input type="text" name="name" placeholder="Your Name" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="email" name="email" placeholder="Your Email" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" name="subject" placeholder="Subject" required>
+                    </div>
+                    <div class="form-group">
+                        <textarea name="message" placeholder="Your Message" rows="5" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Send Message</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <p>&copy; ${new Date().getFullYear()} ${portfolioData.name}. All rights reserved.</p>
+                <div class="footer-social">
+                    ${portfolioData.socialLinks.map(link => `
+                        <a href="${link.url}" target="_blank">
+                            <i class="fab fa-${getSocialIcon(link.platform)}"></i>
+                        </a>
                     `).join('')}
                 </div>
             </div>
-            ${data.contact.enabled && data.contact.formspreeEndpoint ? `
-            <form id="contact-form" class="contact-form" action="${data.contact.formspreeEndpoint}" method="POST">
-                <div class="form-group">
-                    <input type="text" name="name" placeholder="Your Name" required>
-                    <input type="email" name="_replyto" placeholder="Your Email" required>
-                </div>
-                <textarea name="message" placeholder="Your Message" rows="5" required></textarea>
-                <button type="submit" class="btn-primary">Send Message</button>
-                <p id="form-status" class="form-status"></p>
-            </form>
-            ` : ''}
         </div>
-    </section>
+    </footer>
 
     <script src="scripts.js"></script>
 </body>
 </html>`;
-  }, []);
 
-  const generateCSS = useCallback((theme: Theme) => {
-    const themeStyles = {
-      light: {
-        background: '#ffffff',
-        text: '#1f2937',
-        textLight: '#6b7280',
-        card: '#f9fafb',
-        accent: '#8b5cf6',
-        border: '#e5e7eb',
-        shadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-      },
-      dark: {
-        background: '#111827',
-        text: '#f9fafb',
-        textLight: '#9ca3af',
-        card: '#1f2937',
-        accent: '#8b5cf6',
-        border: '#374151',
-        shadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)'
-      },
-      modern: {
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        text: '#ffffff',
-        textLight: '#e5e7eb',
-        card: 'rgba(255, 255, 255, 0.1)',
-        accent: '#fbbf24',
-        border: 'rgba(255, 255, 255, 0.2)',
-        shadow: '0 8px 32px rgba(0, 0, 0, 0.2)'
-      },
-      glassmorphism: {
-        background: 'linear-gradient(135deg, #232526 0%, #414345 100%)',
-        text: '#ffffff',
-        textLight: '#e5e7eb',
-        card: 'rgba(255, 255, 255, 0.05)',
-        accent: '#08f7fe',
-        border: 'rgba(255, 255, 255, 0.15)',
-        shadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
-      }
+      // Generate CSS with current theme
+      const css = generateCSS(currentTheme);
+      
+      // Generate JavaScript
+      const js = generateJS();
+
+      // Create ZIP file
+      const zip = new JSZip();
+      zip.file('index.html', html);
+      zip.file('styles.css', css);
+      zip.file('scripts.js', js);
+
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${portfolioData.name.replace(/\s+/g, '-').toLowerCase()}-portfolio.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Success!",
+        description: "Portfolio downloaded successfully!",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate portfolio. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [portfolioData, currentTheme, toast]);
+
+  // Helper functions for HTML generation
+  const getIconClass = (icon: LucideIcon) => {
+    const iconMap: Record<string, string> = {
+      Home: 'home',
+      User: 'user',
+      Briefcase: 'briefcase',
+      FolderOpen: 'folder-open',
+      Code2: 'code',
+      GraduationCap: 'graduation-cap',
+      MessageSquare: 'comments',
+      BookOpen: 'book-open',
+      Mail: 'envelope'
     };
+    return iconMap[icon.name] || 'circle';
+  };
 
-    const styles = themeStyles[theme];
+  const getSocialIcon = (platform: string) => {
+    const iconMap: Record<string, string> = {
+      GitHub: 'github',
+      LinkedIn: 'linkedin',
+      Twitter: 'twitter',
+      Website: 'globe',
+      Email: 'envelope',
+      Instagram: 'instagram',
+      Facebook: 'facebook',
+      YouTube: 'youtube'
+    };
+    return iconMap[platform] || 'link';
+  };
 
-    return `/* Modern Developer Portfolio Styles */
+  const generateCSS = (theme: Theme) => {
+    return `/* Portfolio Styles */
+:root {
+    --primary-color: ${theme === 'light' ? '#3b82f6' : theme === 'dark' ? '#60a5fa' : theme === 'modern' ? '#8b5cf6' : '#00d4ff'};
+    --secondary-color: ${theme === 'light' ? '#64748b' : theme === 'dark' ? '#94a3b8' : theme === 'modern' ? '#06b6d4' : '#ff006e'};
+    --background-color: ${theme === 'light' ? '#ffffff' : theme === 'dark' ? '#0f172a' : theme === 'modern' ? '#1e1b4b' : 'rgba(255, 255, 255, 0.1)'};
+    --text-color: ${theme === 'light' ? '#1f2937' : theme === 'dark' ? '#f8fafc' : theme === 'modern' ? '#ffffff' : '#ffffff'};
+    --card-background: ${theme === 'light' ? '#f8fafc' : theme === 'dark' ? '#1e293b' : theme === 'modern' ? 'rgba(139, 92, 246, 0.1)' : 'rgba(255, 255, 255, 0.1)'};
+    --border-color: ${theme === 'light' ? '#e5e7eb' : theme === 'dark' ? '#374151' : theme === 'modern' ? 'rgba(139, 92, 246, 0.2)' : 'rgba(255, 255, 255, 0.2)'};
+}
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-html {
-    scroll-behavior: smooth;
-}
-
 body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Inter', sans-serif;
     line-height: 1.6;
-    color: ${styles.text};
-    background: ${styles.background};
-    overflow-x: hidden;
+    color: var(--text-color);
+    background: ${theme === 'glassmorphism' 
+      ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
+      : theme === 'modern' 
+        ? 'linear-gradient(135deg, #1e1b4b 0%, #7c3aed 50%, #1e1b4b 100%)'
+        : 'var(--background-color)'
+    };
 }
 
 .container {
@@ -710,92 +817,109 @@ body {
 .navbar {
     position: fixed;
     top: 0;
-    left: 0;
-    right: 0;
-    background: ${theme === 'modern' ? 'rgba(255, 255, 255, 0.1)' : styles.card};
-    backdrop-filter: blur(10px);
+    width: 100%;
+    background: ${theme === 'glassmorphism' ? 'rgba(255, 255, 255, 0.1)' : 'var(--card-background)'};
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-color);
     z-index: 1000;
-    border-bottom: 1px solid ${styles.border};
+    transition: all 0.3s ease;
 }
 
 .nav-container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 1rem 2rem;
+    padding: 0 2rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    height: 70px;
 }
 
-.nav-brand {
-    font-weight: 700;
+.nav-logo {
     font-size: 1.5rem;
-    color: ${styles.accent};
-    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    color: var(--primary-color);
 }
 
-.nav-links {
+.nav-menu {
     display: flex;
     gap: 2rem;
 }
 
 .nav-link {
-    color: ${styles.text};
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-color);
     text-decoration: none;
-    font-weight: 500;
-    transition: color 0.3s ease;
-    position: relative;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
 }
 
-.nav-link:hover {
-    color: ${styles.accent};
+.nav-link:hover,
+.nav-link.active {
+    background: var(--primary-color);
+    color: white;
 }
 
-.nav-link::after {
-    content: '';
-    position: absolute;
-    bottom: -4px;
-    left: 0;
-    width: 0;
-    height: 2px;
-    background: ${styles.accent};
-    transition: width 0.3s ease;
+.nav-toggle {
+    display: none;
+    flex-direction: column;
+    cursor: pointer;
 }
 
-.nav-link:hover::after {
-    width: 100%;
+.nav-toggle span {
+    width: 25px;
+    height: 3px;
+    background: var(--text-color);
+    margin: 3px 0;
+    transition: 0.3s;
 }
 
 /* Hero Section */
-.hero-section {
+.hero {
     min-height: 100vh;
     display: flex;
     align-items: center;
-    padding: 6rem 2rem 2rem;
+    padding-top: 70px;
     position: relative;
     overflow: hidden;
 }
 
 .hero-container {
+    width: 100%;
     max-width: 1200px;
     margin: 0 auto;
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 4rem;
-    align-items: center;
+    padding: 0 2rem;
 }
 
 .hero-content {
-    max-width: 600px;
+    text-align: center;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.hero-image {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin: 0 auto 2rem;
+    border: 4px solid var(--primary-color);
+}
+
+.hero-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .hero-title {
-    font-size: clamp(2.5rem, 5vw, 4rem);
-    font-weight: 800;
-    line-height: 1.1;
+    font-size: 3.5rem;
+    font-weight: 700;
     margin-bottom: 1rem;
-    font-family: 'Playfair Display', serif;
-    background: linear-gradient(135deg, ${styles.accent}, ${theme === 'modern' ? '#06b6d4' : '#06b6d4'});
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -803,537 +927,611 @@ body {
 
 .hero-subtitle {
     font-size: 1.5rem;
-    font-weight: 600;
-    color: ${styles.accent};
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
+    opacity: 0.9;
 }
 
 .hero-description {
     font-size: 1.1rem;
-    color: ${styles.textLight};
-    margin-bottom: 2.5rem;
-    line-height: 1.7;
+    margin-bottom: 2rem;
+    opacity: 0.8;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
-.hero-actions {
+.hero-cta {
     display: flex;
     gap: 1rem;
-    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 2rem;
 }
 
-.btn-primary, .btn-secondary {
-    padding: 0.875rem 2rem;
-    border-radius: 50px;
+.btn {
+    padding: 0.75rem 2rem;
+    border: none;
+    border-radius: 8px;
     font-weight: 600;
     text-decoration: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    transition: all 0.3s ease;
-    border: 2px solid transparent;
 }
 
 .btn-primary {
-    background: ${styles.accent};
-    color: ${theme === 'modern' ? '#000' : '#fff'};
-    box-shadow: ${styles.shadow};
+    background: var(--primary-color);
+    color: white;
 }
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 }
 
 .btn-secondary {
     background: transparent;
-    color: ${styles.accent};
-    border-color: ${styles.accent};
+    color: var(--text-color);
+    border: 2px solid var(--border-color);
 }
 
 .btn-secondary:hover {
-    background: ${styles.accent};
-    color: ${theme === 'modern' ? '#000' : '#fff'};
-    transform: translateY(-2px);
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
 }
 
-.hero-image {
+.hero-social {
     display: flex;
+    gap: 1rem;
     justify-content: center;
 }
 
-.profile-image-hero {
-    width: 300px;
-    height: 300px;
+.social-link {
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
-    object-fit: cover;
-    border: 4px solid ${styles.accent};
-    box-shadow: ${styles.shadow};
-    animation: float 6s ease-in-out infinite;
+    background: var(--card-background);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-color);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: 1px solid var(--border-color);
 }
 
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
+.social-link:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: translateY(-3px);
 }
 
 /* Sections */
+section {
+    padding: 5rem 0;
+}
+
 .section-title {
     font-size: 2.5rem;
-    font-weight: 700;
     text-align: center;
     margin-bottom: 3rem;
-    color: ${styles.accent};
-    font-family: 'Playfair Display', serif;
+    position: relative;
 }
 
-.about-section, .projects-section, .experience-section, .contact-section {
-    padding: 6rem 0;
+.section-title::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 4px;
+    background: var(--primary-color);
+    border-radius: 2px;
 }
 
-.about-section {
-    background: ${theme === 'modern' ? 'rgba(255, 255, 255, 0.05)' : styles.card};
-}
-
+/* About Section */
 .about-content {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 4rem;
-    align-items: start;
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
 }
 
-.about-bio {
+.about-text {
     font-size: 1.1rem;
-    line-height: 1.8;
     margin-bottom: 2rem;
-    color: ${styles.textLight};
 }
 
-.about-details {
+.about-info {
     display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.detail-item {
-    color: ${styles.textLight};
-}
-
-.detail-item strong {
-    color: ${styles.text};
-    margin-right: 0.5rem;
-}
-
-.skills-section h3 {
-    font-size: 1.5rem;
-    margin-bottom: 1.5rem;
-    color: ${styles.accent};
-}
-
-.skills-grid {
-    display: flex;
+    justify-content: center;
+    gap: 2rem;
     flex-wrap: wrap;
-    gap: 0.75rem;
 }
 
-.skill-tag {
-    background: ${styles.accent};
-    color: ${theme === 'modern' ? '#000' : '#fff'};
-    padding: 0.5rem 1rem;
-    border-radius: 25px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    transition: transform 0.3s ease;
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--secondary-color);
 }
 
-.skill-tag:hover {
-    transform: translateY(-2px);
+/* Experience Timeline */
+.timeline {
+    max-width: 800px;
+    margin: 0 auto;
+    position: relative;
 }
 
-/* Projects */
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--primary-color);
+    transform: translateX(-50%);
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 3rem;
+}
+
+.timeline-content {
+    background: var(--card-background);
+    padding: 2rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    position: relative;
+    width: calc(50% - 30px);
+}
+
+.timeline-item:nth-child(even) .timeline-content {
+    margin-left: auto;
+}
+
+.timeline-content h3 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.timeline-date {
+    color: var(--secondary-color);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+/* Projects Grid */
 .projects-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
     gap: 2rem;
 }
 
-.project-image-gallery {
-    position: relative;
-    overflow: hidden;
-    border-radius: 10px;
-    margin-bottom: 1.5rem;
-    height: 200px;
-}
-
-.gallery-images {
-    display: flex;
-    height: 100%;
-    transition: transform 0.5s ease-in-out;
-}
-
-.gallery-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    flex-shrink: 0;
-}
-
-.gallery-prev, .gallery-next {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    background: rgba(0, 0, 0, 0.5);
-    color: white;
-    border: none;
-    padding: 0.5rem;
-    cursor: pointer;
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-}
-
-.gallery-prev { left: 10px; }
-.gallery-next { right: 10px; }
-
 .project-card {
-    background: ${styles.card};
-    border-radius: 20px;
-    padding: 2rem;
-    border: 1px solid ${styles.border};
-    transition: all 0.3s ease;
-    position: relative;
+    background: var(--card-background);
+    border-radius: 12px;
     overflow: hidden;
-    ${theme === 'glassmorphism' ? 'backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);' : ''}
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
 }
 
 .project-card:hover {
     transform: translateY(-5px);
-    box-shadow: ${styles.shadow};
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
 }
 
-.project-card.featured::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, ${styles.accent}, #06b6d4);
+.project-content {
+    padding: 2rem;
 }
 
-.project-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
+.project-content h3 {
+    color: var(--primary-color);
     margin-bottom: 1rem;
-}
-
-.project-title {
-    font-size: 1.3rem;
-    font-weight: 600;
-    color: ${styles.text};
-    margin-bottom: 0.5rem;
-}
-
-.project-links {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.project-link {
-    color: ${styles.accent};
-    text-decoration: none;
-    font-size: 0.9rem;
-    font-weight: 500;
-    padding: 0.25rem 0.75rem;
-    border: 1px solid ${styles.accent};
-    border-radius: 15px;
-    transition: all 0.3s ease;
-}
-
-.project-link:hover {
-    background: ${styles.accent};
-    color: ${theme === 'modern' ? '#000' : '#fff'};
-}
-
-.project-description {
-    color: ${styles.textLight};
-    margin-bottom: 1.5rem;
-    line-height: 1.6;
 }
 
 .project-tech {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
+    margin: 1rem 0;
 }
 
 .tech-tag {
-    background: ${styles.border};
-    color: ${styles.text};
+    background: var(--primary-color);
+    color: white;
     padding: 0.25rem 0.75rem;
-    border-radius: 15px;
-    font-size: 0.8rem;
-    font-weight: 500;
+    border-radius: 20px;
+    font-size: 0.875rem;
 }
 
-/* Experience Timeline */
-.timeline {
-    position: relative;
+.project-links {
+    display: flex;
+    gap: 1rem;
+}
+
+.project-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.project-link:hover {
+    opacity: 0.8;
+}
+
+/* Skills Grid */
+.skills-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
     max-width: 800px;
     margin: 0 auto;
 }
 
-.timeline::before {
-    content: '';
-    position: absolute;
-    left: 30px;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: ${styles.accent};
-}
-
-.timeline-item {
-    position: relative;
-    margin-bottom: 3rem;
-    padding-left: 4rem;
-}
-
-.timeline-marker {
-    position: absolute;
-    left: 22px;
-    top: 0;
-    width: 16px;
-    height: 16px;
-    background: ${styles.accent};
-    border-radius: 50%;
-    border: 4px solid ${styles.background};
-}
-
-.timeline-title {
-    font-size: 1.3rem;
-    font-weight: 600;
-    color: ${styles.text};
-    margin-bottom: 0.25rem;
-}
-
-.timeline-subtitle {
-    font-size: 1rem;
-    font-weight: 500;
-    color: ${styles.accent};
-    margin-bottom: 0.5rem;
-}
-
-.timeline-date {
-    font-size: 0.9rem;
-    color: ${styles.textLight};
-    margin-bottom: 1rem;
-    font-weight: 500;
-}
-
-.timeline-description {
-    color: ${styles.textLight};
-    line-height: 1.6;
-}
-
-/* Contact */
-.contact-content {
-    max-width: 600px;
-    margin: 0 auto;
+.skill-item {
+    background: var(--card-background);
+    padding: 1rem;
+    border-radius: 8px;
     text-align: center;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
 }
 
-.contact-info {
+.skill-item:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* Education & Certifications */
+.education-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.education-item,
+.certification-item {
+    background: var(--card-background);
+    padding: 2rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
     margin-bottom: 2rem;
 }
 
-.contact-item {
+.education-item h3,
+.certification-item h3 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+/* Testimonials */
+.testimonials-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.testimonial-card {
+    background: var(--card-background);
+    padding: 2rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    text-align: center;
+}
+
+.testimonial-stars {
+    color: #fbbf24;
     margin-bottom: 1rem;
-    font-size: 1.1rem;
-    color: ${styles.textLight};
 }
 
-.contact-item strong {
-    color: ${styles.text};
-    margin-right: 0.5rem;
+.testimonial-author {
+    margin-top: 1rem;
 }
 
-.social-links {
+.testimonial-author strong {
+    display: block;
+    color: var(--primary-color);
+}
+
+/* Blog Grid */
+.blog-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.blog-card {
+    background: var(--card-background);
+    padding: 2rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.blog-card:hover {
+    transform: translateY(-3px);
+}
+
+.blog-card h3 {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+.blog-meta {
     display: flex;
-    justify-content: center;
     gap: 1rem;
-    flex-wrap: wrap;
+    color: var(--secondary-color);
+    font-size: 0.875rem;
+    margin: 1rem 0;
 }
 
-.social-link {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 50px;
-    height: 50px;
-    background: ${styles.accent};
-    color: ${theme === 'modern' ? '#000' : '#fff'};
-    border-radius: 50%;
+.blog-link {
+    color: var(--primary-color);
     text-decoration: none;
     font-weight: 600;
-    transition: all 0.3s ease;
-    box-shadow: ${styles.shadow};
 }
 
-.social-link:hover {
-    transform: translateY(-3px) scale(1.1);
-    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+/* Contact Section */
+.contact-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    max-width: 1000px;
+    margin: 0 auto;
 }
 
-.social-icon {
-    font-size: 0.9rem;
+.contact-methods {
+    margin-top: 2rem;
+}
+
+.contact-method {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    color: var(--text-color);
+    text-decoration: none;
 }
 
 .contact-form {
-    max-width: 700px;
-    margin: 3rem auto 0;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
+    background: var(--card-background);
+    padding: 2rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
 }
 
 .form-group {
-    display: flex;
-    gap: 1.5rem;
+    margin-bottom: 1.5rem;
 }
 
-.contact-form input, .contact-form textarea {
+.form-group input,
+.form-group textarea {
     width: 100%;
-    padding: 1rem;
-    background: ${styles.border};
-    border: 1px solid ${styles.border};
-    border-radius: 10px;
-    color: ${styles.text};
-    font-family: 'Inter', sans-serif;
-    font-size: 1rem;
-    transition: border-color 0.3s ease;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--background-color);
+    color: var(--text-color);
+    font-family: inherit;
 }
 
-.contact-form input:focus, .contact-form textarea:focus {
+.form-group input:focus,
+.form-group textarea:focus {
     outline: none;
-    border-color: ${styles.accent};
+    border-color: var(--primary-color);
 }
 
-.contact-form input::placeholder, .contact-form textarea::placeholder {
-    color: ${styles.textLight};
+/* Footer */
+.footer {
+    background: var(--card-background);
+    border-top: 1px solid var(--border-color);
+    padding: 2rem 0;
 }
 
-.contact-form button {
-    align-self: center;
+.footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.form-status {
-    text-align: center;
-    margin-top: 1rem;
-    font-weight: 500;
-    min-height: 1.5rem;
+.footer-social {
+    display: flex;
+    gap: 1rem;
+}
+
+.footer-social a {
+    color: var(--text-color);
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+}
+
+.footer-social a:hover {
+    color: var(--primary-color);
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-    .nav-links {
-        display: none;
-    }
-    
-    .hero-container {
-        grid-template-columns: 1fr;
+    .nav-menu {
+        position: fixed;
+        left: -100%;
+        top: 70px;
+        flex-direction: column;
+        background: var(--card-background);
+        width: 100%;
         text-align: center;
+        transition: 0.3s;
+        padding: 2rem 0;
     }
-    
-    .about-content {
-        grid-template-columns: 1fr;
-        gap: 2rem;
+
+    .nav-menu.active {
+        left: 0;
     }
-    
-    .hero-actions {
-        justify-content: center;
+
+    .nav-toggle {
+        display: flex;
     }
-    
-    .projects-grid {
-        grid-template-columns: 1fr;
+
+    .hero-title {
+        font-size: 2.5rem;
     }
-    
-    .profile-image-hero {
-        width: 250px;
-        height: 250px;
+
+    .hero-cta {
+        flex-direction: column;
+        align-items: center;
     }
-    
+
     .timeline::before {
-        left: 15px;
+        left: 20px;
     }
-    
-    .timeline-item {
-        padding-left: 3rem;
+
+    .timeline-content {
+        width: calc(100% - 50px);
+        margin-left: 50px !important;
     }
-    
-    .timeline-marker {
-        left: 7px;
+
+    .education-content,
+    .contact-content {
+        grid-template-columns: 1fr;
+    }
+
+    .about-info {
+        flex-direction: column;
+        align-items: center;
     }
 }
 
-@media (max-width: 480px) {
-    .container {
-        padding: 0 1rem;
+/* Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
     }
-    
-    .hero-section {
-        padding: 4rem 1rem 2rem;
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
-    
-    .hero-title {
-        font-size: 2rem;
-    }
-    
-    .hero-subtitle {
-        font-size: 1.2rem;
-    }
-    
-    .section-title {
-        font-size: 2rem;
-    }
-    
-    .project-card {
-        padding: 1.5rem;
-    }
-}`;
-  }, []);
+}
 
-  const generateJS = useCallback(() => {
-    return `document.addEventListener('DOMContentLoaded', function() {
+.hero-content > * {
+    animation: fadeInUp 0.8s ease-out forwards;
+}
+
+.hero-content > *:nth-child(1) { animation-delay: 0.1s; }
+.hero-content > *:nth-child(2) { animation-delay: 0.2s; }
+.hero-content > *:nth-child(3) { animation-delay: 0.3s; }
+.hero-content > *:nth-child(4) { animation-delay: 0.4s; }
+.hero-content > *:nth-child(5) { animation-delay: 0.5s; }
+
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--background-color);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--secondary-color);
+}`;
+  };
+
+  const generateJS = () => {
+    return `// Portfolio JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    // Mobile menu toggle
+    const navToggle = document.getElementById('nav-toggle');
+    const navMenu = document.getElementById('nav-menu');
+    
+    if (navToggle && navMenu) {
+        navToggle.addEventListener('click', function() {
+            navMenu.classList.toggle('active');
+        });
+    }
+
     // Smooth scrolling for navigation links
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
             e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
-            if (target) {
-                target.scrollIntoView({
+            const targetId = this.getAttribute('href').substring(1);
+            const targetSection = document.getElementById(targetId);
+            
+            if (targetSection) {
+                targetSection.scrollIntoView({
                     behavior: 'smooth',
                     block: 'start'
                 });
+                
+                // Close mobile menu
+                if (navMenu) {
+                    navMenu.classList.remove('active');
+                }
             }
         });
     });
 
-    // Navbar scroll effect
-    const navbar = document.querySelector('.navbar');
-    window.addEventListener('scroll', () => {
-        if (window.scrollY > 100) {
-            navbar.style.background = 'rgba(255, 255, 255, 0.95)';
-            navbar.style.backdropFilter = 'blur(20px)';
-        } else {
-            navbar.style.background = 'rgba(255, 255, 255, 0.1)';
-            navbar.style.backdropFilter = 'blur(10px)';
-        }
-    });
+    // Active navigation highlight
+    function updateActiveNav() {
+        const sections = document.querySelectorAll('section');
+        const navLinks = document.querySelectorAll('.nav-link');
+        
+        let current = '';
+        sections.forEach(section => {
+            const sectionTop = section.offsetTop;
+            const sectionHeight = section.clientHeight;
+            if (window.scrollY >= sectionTop - 100) {
+                current = section.getAttribute('id');
+            }
+        });
+        
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href').substring(1) === current) {
+                link.classList.add('active');
+            }
+        });
+    }
+
+    // Scroll event listener
+    window.addEventListener('scroll', updateActiveNav);
+
+    // Contact form handling
+    const contactForm = document.querySelector('.contact-form');
+    if (contactForm) {
+        contactForm.addEventListener('submit', function(e) {
+            // Form will be handled by Formspree
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.textContent = 'Sending...';
+                submitBtn.disabled = true;
+                
+                setTimeout(() => {
+                    submitBtn.textContent = 'Send Message';
+                    submitBtn.disabled = false;
+                }, 2000);
+            }
+        });
+    }
 
     // Intersection Observer for animations
     const observerOptions = {
@@ -1341,7 +1539,7 @@ body {
         rootMargin: '0px 0px -50px 0px'
     };
 
-    const observer = new IntersectionObserver((entries) => {
+    const observer = new IntersectionObserver(function(entries) {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 entry.target.style.opacity = '1';
@@ -1350,1023 +1548,1090 @@ body {
         });
     }, observerOptions);
 
-    // Observe elements for animation
-    document.querySelectorAll('.project-card, .timeline-item, .skill-tag').forEach(el => {
+    // Observe all cards and sections
+    const animatedElements = document.querySelectorAll('.project-card, .testimonial-card, .blog-card, .timeline-item');
+    animatedElements.forEach(el => {
         el.style.opacity = '0';
         el.style.transform = 'translateY(30px)';
         el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
         observer.observe(el);
     });
 
-    // Add typing effect to hero title
+    // Typing effect for hero title (optional)
     const heroTitle = document.querySelector('.hero-title');
-    if (heroTitle) {
+    if (heroTitle && heroTitle.textContent) {
         const text = heroTitle.textContent;
         heroTitle.textContent = '';
-        let i = 0;
+        heroTitle.style.borderRight = '2px solid var(--primary-color)';
         
-        const typeWriter = () => {
+        let i = 0;
+        function typeWriter() {
             if (i < text.length) {
                 heroTitle.textContent += text.charAt(i);
                 i++;
-                setTimeout(typeWriter, 50);
+                setTimeout(typeWriter, 100);
+            } else {
+                setTimeout(() => {
+                    heroTitle.style.borderRight = 'none';
+                }, 500);
             }
-        };
+        }
         
-        setTimeout(typeWriter, 500);
+        setTimeout(typeWriter, 1000);
     }
-
-    // Add click effects to interactive elements
-    document.querySelectorAll('.btn-primary, .btn-secondary, .project-link, .social-link').forEach(element => {
-        element.addEventListener('click', function(e) {
-            this.style.transform = 'scale(0.95)';
-            setTimeout(() => {
-                this.style.transform = '';
-            }, 150);
-        });
-    });
 
     // Parallax effect for hero section
-    window.addEventListener('scroll', () => {
+    window.addEventListener('scroll', function() {
         const scrolled = window.pageYOffset;
-        const heroContent = document.querySelector('.hero-content');
-        if (heroContent) {
-            heroContent.style.transform = \`translateY(\${scrolled * 0.2}px)\`;
+        const hero = document.querySelector('.hero');
+        if (hero) {
+            const rate = scrolled * -0.5;
+            hero.style.transform = \`translateY(\${rate}px)\`;
         }
     });
 
-    // Add hover effects to project cards
-    document.querySelectorAll('.project-card').forEach(card => {
-        card.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-10px) rotateX(5deg)';
-        });
-        
-        card.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0) rotateX(0deg)';
-        });
-    });
-
-    console.log('🚀 Portfolio loaded successfully! Welcome to an amazing developer experience.');
-
-    const contactForm = document.getElementById('contact-form');
-    if (contactForm) {
-        contactForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            const form = e.target;
-            const data = new FormData(form);
-            const status = document.getElementById('form-status');
-            status.innerHTML = 'Sending...';
-            const bodyStyles = window.getComputedStyle(document.body);
-            status.style.color = bodyStyles.color;
-
-            fetch(form.action, {
-                method: form.method,
-                body: data,
-                headers: {
-                    'Accept': 'application/json'
-                }
-            }).then(response => {
-                if (response.ok) {
-                    status.innerHTML = "Thanks for your submission!";
-                    status.style.color = 'green';
-                    form.reset();
-                } else {
-                    response.json().then(data => {
-                        if (Object.hasOwn(data, 'errors')) {
-                            status.innerHTML = data["errors"].map(error => error["message"]).join(", ");
-                        } else {
-                            status.innerHTML = "Oops! There was a problem submitting your form";
-                        }
-                        status.style.color = 'red';
-                    })
-                }
-            }).catch(error => {
-                status.innerHTML = "Oops! There was a problem submitting your form";
-                status.style.color = 'red';
-            });
+    // Dark mode toggle (if needed)
+    const themeToggle = document.querySelector('.theme-toggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', function() {
+            document.body.classList.toggle('theme-dark');
+            localStorage.setItem('theme', document.body.classList.contains('theme-dark') ? 'dark' : 'light');
         });
     }
 
-    document.querySelectorAll('.project-image-gallery').forEach(gallery => {
-        const imagesContainer = gallery.querySelector('.gallery-images');
-        if (!imagesContainer) return;
-        const images = gallery.querySelectorAll('.gallery-image');
-        const prevButton = gallery.querySelector('.gallery-prev');
-        const nextButton = gallery.querySelector('.gallery-next');
-        let currentIndex = 0;
+    // Load saved theme
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+        document.body.classList.toggle('theme-dark', savedTheme === 'dark');
+    }
 
-        function showImage(index) {
-            imagesContainer.style.transform = 'translateX(-' + (index * 100) + '%)';
-        }
-
-        if (prevButton && nextButton && images.length > 1) {
-            prevButton.addEventListener('click', () => {
-                currentIndex = (currentIndex > 0) ? currentIndex - 1 : images.length - 1;
-                showImage(currentIndex);
-            });
-
-            nextButton.addEventListener('click', () => {
-                currentIndex = (currentIndex < images.length - 1) ? currentIndex + 1 : 0;
-                showImage(currentIndex);
-            });
-        } else {
-            if (prevButton) prevButton.style.display = 'none';
-            if (nextButton) nextButton.style.display = 'none';
-        }
-    });
+    // Navbar scroll effect
+    const navbar = document.querySelector('.navbar');
+    if (navbar) {
+        window.addEventListener('scroll', function() {
+            if (window.scrollY > 50) {
+                navbar.style.background = 'rgba(255, 255, 255, 0.95)';
+                navbar.style.backdropFilter = 'blur(20px)';
+            } else {
+                navbar.style.background = 'var(--card-background)';
+                navbar.style.backdropFilter = 'blur(20px)';
+            }
+        });
+    }
 });`;
-  }, []);
-
-  const downloadPortfolio = async () => {
-    try {
-      const zip = new JSZip();
-      
-      const html = generatePortfolioHTML(portfolioData, currentTheme);
-      const css = generateCSS(currentTheme);
-      const js = generateJS();
-      
-      zip.file('index.html', html);
-      zip.file('styles.css', css);
-      zip.file('scripts.js', js);
-      
-      const content = await zip.generateAsync({ type: 'blob' });
-      
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(content);
-      link.download = `${portfolioData.name.replace(/\s+/g, '-').toLowerCase()}-portfolio.zip`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      toast({
-        title: "Portfolio Downloaded! 🎉",
-        description: "Your professional portfolio website has been packaged and downloaded successfully.",
-      });
-    } catch (error) {
-      toast({
-        title: "Download Failed",
-        description: "There was an error creating your portfolio. Please try again.",
-        variant: "destructive",
-      });
-    }
   };
 
-  const getThemeClasses = (theme: Theme) => {
-    switch (theme) {
-      case 'light':
-        return 'bg-white text-gray-900';
-      case 'dark':
-        return 'bg-gray-900 text-white';
-      case 'modern':
-        return 'bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 text-white';
-      case 'glassmorphism':
-        return 'bg-gradient-to-br from-gray-700 via-gray-900 to-black text-white';
-      default:
-        return 'bg-white text-gray-900';
-    }
-  };
-
-  const renderFormSection = () => {
-    switch (activeSection) {
-      case 'basic':
-        return (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input
-                  id="name"
-                  value={portfolioData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  placeholder="Your full name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="title">Professional Title</Label>
-                <Input
-                  id="title"
-                  value={portfolioData.title}
-                  onChange={(e) => handleInputChange('title', e.target.value)}
-                  placeholder="e.g., Full-Stack Developer"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="bio">Biography</Label>
-              <Textarea
-                id="bio"
-                value={portfolioData.bio}
-                onChange={(e) => handleInputChange('bio', e.target.value)}
-                placeholder="Tell us about yourself..."
-                rows={4}
-                className="resize-none"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
-                <Input
-                  id="location"
-                  value={portfolioData.location}
-                  onChange={(e) => handleInputChange('location', e.target.value)}
-                  placeholder="City, Country"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={portfolioData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  placeholder="your@email.com"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Profile Picture</Label>
-              <div className="flex items-center gap-4">
-                <Button
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="autobio-transition"
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Upload Photo
-                </Button>
-                {portfolioData.profilePicture && (
-                  <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-primary">
-                    <img
-                      src={portfolioData.profilePicture}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-              </div>
-            </div>
-
-            {/* Social Links */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label>Social Media Links</Label>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={addSocialLink}
-                  className="autobio-transition hover:scale-105"
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add Link
-                </Button>
-              </div>
-              <div className="space-y-3">
-                {portfolioData.socialLinks.map((link) => (
-                  <div key={link.id} className="flex gap-2">
-                    <select
-                      value={link.platform}
-                      onChange={(e) => updateSocialLink(link.id, 'platform', e.target.value)}
-                      className="px-3 py-2 border rounded-md bg-background"
-                    >
-                      {socialPlatforms.map((platform) => (
-                        <option key={platform.name} value={platform.name}>
-                          {platform.name}
-                        </option>
-                      ))}
-                    </select>
-                    <Input
-                      value={link.url}
-                      onChange={(e) => updateSocialLink(link.id, 'url', e.target.value)}
-                      placeholder={socialPlatforms.find(p => p.name === link.platform)?.placeholder || 'Enter URL'}
-                      className="flex-1"
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeSocialLink(link.id)}
-                      className="autobio-transition hover:scale-105 text-destructive hover:text-destructive"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Skills */}
-            <div className="space-y-4">
-              <Label>Skills & Technologies</Label>
-              <div className="flex gap-2">
-                <Input
-                  value={skillInput}
-                  onChange={(e) => setSkillInput(e.target.value)}
-                  onKeyPress={handleSkillKeyPress}
-                  placeholder="Add a skill and press Enter"
-                  className="flex-1"
-                />
-                <Button
-                  onClick={addSkill}
-                  variant="outline"
-                  className="autobio-transition hover:scale-105"
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {portfolioData.skills.map((skill) => (
-                  <Badge
-                    key={skill}
-                    variant="secondary"
-                    className="cursor-pointer autobio-transition hover:scale-105"
-                    onClick={() => removeSkill(skill)}
-                  >
-                    {skill}
-                    <X className="w-3 h-3 ml-1" />
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'hero':
-        return (
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="heroTitle">Hero Title</Label>
-              <Input
-                id="heroTitle"
-                value={portfolioData.heroTitle}
-                onChange={(e) => handleInputChange('heroTitle', e.target.value)}
-                placeholder="Your compelling headline"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="heroSubtitle">Hero Subtitle</Label>
-              <Input
-                id="heroSubtitle"
-                value={portfolioData.heroSubtitle}
-                onChange={(e) => handleInputChange('heroSubtitle', e.target.value)}
-                placeholder="Your professional title or tagline"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="heroDescription">Hero Description</Label>
-              <Textarea
-                id="heroDescription"
-                value={portfolioData.heroDescription}
-                onChange={(e) => handleInputChange('heroDescription', e.target.value)}
-                placeholder="A brief description of what you do"
-                rows={3}
-                className="resize-none"
-              />
-            </div>
-          </div>
-        );
-
-      case 'projects':
-        return (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <Label className="text-lg font-semibold">Projects</Label>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={addProject}
-                className="autobio-transition hover:scale-105"
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Add Project
-              </Button>
-            </div>
-            
-            <div className="space-y-4">
-              {portfolioData.projects.map((project, index) => (
-                <Card key={project.id} className="p-4">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-medium">Project {index + 1}</h4>
-                      <div className="flex items-center gap-2">
-                        <label className="flex items-center gap-2 text-sm">
-                          <input
-                            type="checkbox"
-                            checked={project.featured}
-                            onChange={(e) => updateProject(project.id, 'featured', e.target.checked)}
-                            className="rounded"
-                          />
-                          Featured
-                        </label>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeProject(project.id)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <Input
-                        value={project.title}
-                        onChange={(e) => updateProject(project.id, 'title', e.target.value)}
-                        placeholder="Project title"
-                      />
-                      <Input
-                        value={project.liveUrl}
-                        onChange={(e) => updateProject(project.id, 'liveUrl', e.target.value)}
-                        placeholder="Live demo URL"
-                      />
-                    </div>
-                    
-                    <Input
-                      value={project.githubUrl}
-                      onChange={(e) => updateProject(project.id, 'githubUrl', e.target.value)}
-                      placeholder="GitHub repository URL"
-                    />
-                    
-                    <Textarea
-                      value={project.description}
-                      onChange={(e) => updateProject(project.id, 'description', e.target.value)}
-                      placeholder="Project description"
-                      rows={3}
-                      className="resize-none"
-                    />
-                    
-                    <Input
-                      value={project.technologies.join(', ')}
-                      onChange={(e) => updateProject(project.id, 'technologies', e.target.value.split(', ').filter(Boolean))}
-                      placeholder="Technologies used (comma-separated)"
-                    />
-
-                    <div>
-                      <Label>Project Images</Label>
-                      <Input
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        onChange={(e) => handleProjectImageUpload(project.id, e.target.files)}
-                        className="mt-1"
-                      />
-                      <div className="flex gap-2 mt-2 flex-wrap">
-                        {project.images.map((image, index) => (
-                          <div key={index} className="relative">
-                            <img src={image} alt={`Project image ${index + 1}`} className="w-20 h-20 object-cover rounded-md border" />
-                            <Button
-                              size="icon"
-                              variant="destructive"
-                              className="absolute -top-2 -right-2 w-6 h-6 rounded-full"
-                              onClick={() => handleRemoveProjectImage(project.id, index)}
-                            >
-                              <X className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </div>
-        );
-
-      case 'experience':
-        return (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <Label className="text-lg font-semibold">Work Experience</Label>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={addExperience}
-                className="autobio-transition hover:scale-105"
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Add Experience
-              </Button>
-            </div>
-            
-            <div className="space-y-4">
-              {portfolioData.experience.map((exp, index) => (
-                <Card key={exp.id} className="p-4">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-medium">Experience {index + 1}</h4>
-                      <div className="flex items-center gap-2">
-                        <label className="flex items-center gap-2 text-sm">
-                          <input
-                            type="checkbox"
-                            checked={exp.current}
-                            onChange={(e) => updateExperience(exp.id, 'current', e.target.checked)}
-                            className="rounded"
-                          />
-                          Current Position
-                        </label>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeExperience(exp.id)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <Input
-                        value={exp.position}
-                        onChange={(e) => updateExperience(exp.id, 'position', e.target.value)}
-                        placeholder="Job title"
-                      />
-                      <Input
-                        value={exp.company}
-                        onChange={(e) => updateExperience(exp.id, 'company', e.target.value)}
-                        placeholder="Company name"
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <Input
-                        type="month"
-                        value={exp.startDate}
-                        onChange={(e) => updateExperience(exp.id, 'startDate', e.target.value)}
-                        placeholder="Start date"
-                      />
-                      {!exp.current && (
-                        <Input
-                          type="month"
-                          value={exp.endDate}
-                          onChange={(e) => updateExperience(exp.id, 'endDate', e.target.value)}
-                          placeholder="End date"
-                        />
-                      )}
-                      <Input
-                        value={exp.location}
-                        onChange={(e) => updateExperience(exp.id, 'location', e.target.value)}
-                        placeholder="Location"
-                      />
-                    </div>
-                    
-                    <Textarea
-                      value={exp.description}
-                      onChange={(e) => updateExperience(exp.id, 'description', e.target.value)}
-                      placeholder="Job description and achievements"
-                      rows={3}
-                      className="resize-none"
-                    />
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </div>
-        );
-
-      case 'contact':
-        return (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between rounded-lg border p-4">
-              <div>
-                <Label htmlFor="contactEnabled" className="font-semibold">Enable Contact Form</Label>
-                <p className="text-xs text-muted-foreground">
-                  Adds a contact form to your portfolio.
-                </p>
-              </div>
-              <Switch
-                id="contactEnabled"
-                checked={portfolioData.contact.enabled}
-                onCheckedChange={(checked) => handleInputChange('contact', { ...portfolioData.contact, enabled: checked })}
-              />
-            </div>
-            {portfolioData.contact.enabled && (
-              <div className="space-y-2">
-                <Label htmlFor="formspreeEndpoint">Formspree Endpoint</Label>
-                <Input
-                  id="formspreeEndpoint"
-                  value={portfolioData.contact.formspreeEndpoint}
-                  onChange={(e) => handleInputChange('contact', { ...portfolioData.contact, formspreeEndpoint: e.target.value })}
-                  placeholder="https://formspree.io/f/your_form_id"
-                />
-                <p className="text-sm text-muted-foreground">
-                  Get your endpoint from <a href="https://formspree.io" target="_blank" rel="noopener noreferrer" className="underline text-primary">Formspree</a>.
-                </p>
-              </div>
-            )}
-          </div>
-        );
-      default:
-        return (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>Select a section from the sidebar to start editing</p>
-          </div>
-        );
-    }
-  };
-
+  // Portfolio Preview Component with Navigation
   const PortfolioPreview = ({ isFullscreen = false }) => (
     <div className={`relative ${isFullscreen ? 'h-full' : 'min-h-[600px] max-h-[calc(100vh-200px)]'} overflow-y-auto rounded-lg ${getThemeClasses(currentTheme)} autobio-transition`}>
-      {/* 3D Background */}
-      <div className="absolute inset-0 h-64">
-        <Scene3D theme={currentTheme} />
-      </div>
-
-      {/* Hero Section Preview */}
-      <div className="relative z-10 p-8 text-center space-y-6">
-        {/* Profile Picture */}
-        <motion.div
-          className="flex justify-center"
-          animate={{ y: [0, -10, 0] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-        >
-          {portfolioData.profilePicture ? (
-            <img
-              src={portfolioData.profilePicture}
-              alt="Profile"
-              className="w-32 h-32 rounded-full object-cover border-4 border-primary shadow-glow"
-            />
-          ) : (
-            <div className="w-32 h-32 rounded-full bg-muted flex items-center justify-center text-4xl opacity-50 border-4 border-primary">
-              👤
+      {/* Sticky Navigation */}
+      <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+        <div className="px-6 py-3">
+          <div className="flex items-center justify-between">
+            <div className="font-bold text-lg text-primary">
+              {portfolioData.name}
             </div>
-          )}
-        </motion.div>
+            
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-1">
+              {navigationSections.map((section) => {
+                const Icon = section.icon;
+                return (
+                  <button
+                    key={section.id}
+                    onClick={() => scrollToSection(section.id)}
+                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      activeSection === section.id
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{section.label}</span>
+                  </button>
+                );
+              })}
+            </div>
 
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 rounded-lg hover:bg-accent"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Mobile Navigation Menu */}
+          <AnimatePresence>
+            {mobileMenuOpen && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="md:hidden mt-3 py-3 border-t border-border"
+              >
+                <div className="grid grid-cols-2 gap-2">
+                  {navigationSections.map((section) => {
+                    const Icon = section.icon;
+                    return (
+                      <button
+                        key={section.id}
+                        onClick={() => scrollToSection(section.id)}
+                        className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                          activeSection === section.id
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span>{section.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <section id="preview-hero" className="relative min-h-screen flex items-center overflow-hidden">
+        {/* 3D Background */}
+        <div className="absolute inset-0 h-full">
+          <Scene3D theme={currentTheme} />
+        </div>
+        
         {/* Hero Content */}
-        <div className="space-y-4">
-          <motion.h1
-            className="text-3xl font-bold font-display text-primary"
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            {portfolioData.heroTitle}
-          </motion.h1>
-
-          <motion.h2
-            className="text-xl font-semibold"
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            {portfolioData.heroSubtitle}
-          </motion.h2>
-
-          <motion.p
-            className="text-sm opacity-80 leading-relaxed"
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            {portfolioData.heroDescription}
-          </motion.p>
-        </div>
-
-        {/* Action Buttons */}
-        <motion.div
-          className="flex justify-center gap-3 flex-wrap"
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-        >
-          <Button className="autobio-transition hover:scale-105">
-            <Play className="w-4 h-4 mr-2" />
-            View Work
-          </Button>
-          <Button variant="outline" className="autobio-transition hover:scale-105">
-            <Mail className="w-4 h-4 mr-2" />
-            Contact Me
-          </Button>
-        </motion.div>
-      </div>
-
-      {/* About Section Preview */}
-      <div className={`p-8 space-y-6 rounded-lg ${currentTheme === 'glassmorphism' ? 'bg-white/10 backdrop-blur-lg border border-white/20' : 'bg-background/50 backdrop-blur-sm'}`}>
-        <h3 className="text-lg font-semibold text-primary">About Me</h3>
-        <p className="text-sm opacity-80 leading-relaxed">
-          {portfolioData.bio}
-        </p>
-
-        {/* Quick Info */}
-        <div className="space-y-2 text-sm">
-          <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-primary" />
-            <span>{portfolioData.location}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Mail className="w-4 h-4 text-primary" />
-            <span>{portfolioData.email}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Skills Preview */}
-      {portfolioData.skills.length > 0 && (
-        <div className="p-8 space-y-4">
-          <h3 className="text-lg font-semibold text-primary">Skills</h3>
-          <div className="flex flex-wrap gap-2">
-            {portfolioData.skills.slice(0, 8).map((skill, index) => (
-              <motion.span
-                key={skill}
-                className="skill-tag autobio-transition"
+        <div className="relative z-10 w-full px-6 py-20">
+          <div className="max-w-4xl mx-auto text-center">
+            {portfolioData.profilePicture && (
+              <motion.div
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
+                transition={{ duration: 0.6, type: "spring" }}
+                className="w-32 h-32 mx-auto mb-8 rounded-full overflow-hidden border-4 border-primary/20 shadow-2xl"
               >
-                {skill}
-              </motion.span>
-            ))}
-            {portfolioData.skills.length > 8 && (
-              <span className="skill-tag opacity-60">
-                +{portfolioData.skills.length - 8} more
-              </span>
+                <img 
+                  src={portfolioData.profilePicture} 
+                  alt={portfolioData.name}
+                  className="w-full h-full object-cover"
+                />
+              </motion.div>
             )}
+            
+            <motion.h1
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent"
+            >
+              {portfolioData.heroTitle}
+            </motion.h1>
+            
+            <motion.p
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+              className="text-xl md:text-2xl mb-4 text-muted-foreground"
+            >
+              {portfolioData.heroSubtitle}
+            </motion.p>
+            
+            <motion.p
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.6 }}
+              className="text-lg mb-8 text-muted-foreground max-w-2xl mx-auto"
+            >
+              {portfolioData.heroDescription}
+            </motion.p>
+            
+            <motion.div
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.8 }}
+              className="flex flex-col sm:flex-row gap-4 justify-center mb-12"
+            >
+              <Button onClick={() => scrollToSection('projects')} size="lg" className="group">
+                <Eye className="w-5 h-5 mr-2" />
+                View My Work
+                <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
+              </Button>
+              <Button onClick={() => scrollToSection('contact')} variant="outline" size="lg">
+                <Send className="w-5 h-5 mr-2" />
+                Get In Touch
+              </Button>
+            </motion.div>
+            
+            <motion.div
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.8, delay: 1.0 }}
+              className="flex justify-center space-x-4"
+            >
+              {portfolioData.socialLinks.map((link) => {
+                const Icon = iconMap[link.icon];
+                return (
+                  <a
+                    key={link.id}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-12 h-12 rounded-full bg-background/10 backdrop-blur-sm border border-primary/20 flex items-center justify-center text-foreground hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110"
+                  >
+                    <Icon className="w-5 h-5" />
+                  </a>
+                );
+              })}
+            </motion.div>
           </div>
         </div>
-      )}
+      </section>
 
-                  {/* Contact Form Preview */}
-                  {portfolioData.contact.enabled && (
-                    <div className="p-8 space-y-4">
-                      <h3 className="text-lg font-semibold text-primary">Get In Touch</h3>
-                      <div className="max-w-md mx-auto text-left">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                          <Input placeholder="Your Name" disabled className="bg-background/20 border-border" />
-                          <Input placeholder="Your Email" type="email" disabled className="bg-background/20 border-border" />
-                        </div>
-                        <Textarea placeholder="Your Message" disabled className="bg-background/20 border-border mb-4" />
-                        <Button className="w-full" disabled>
-                          <Send className="w-4 h-4 mr-2" />
-                          Send Message
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-      {/* Projects Preview */}
-      {portfolioData.projects.length > 0 && (
-        <div className="p-8 space-y-4">
-          <h3 className="text-lg font-semibold text-primary">Featured Projects</h3>
-          <div className="space-y-4">
-            {portfolioData.projects.slice(0, 2).map((project, index) => (
-              <motion.div
-                key={project.id}
-                            className={`rounded-lg p-4 ${currentTheme === 'glassmorphism' ? 'bg-white/10 backdrop-blur-lg border border-white/20' : 'bg-background/50 backdrop-blur-sm border border-border'}`}
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.5, delay: index * 0.2 }}
-              >
-                                {project.images && project.images.length > 0 && (
-                                  <Carousel className="w-full rounded-lg overflow-hidden mb-4">
-                                    <CarouselContent>
-                                      {project.images.map((image, index) => (
-                                        <CarouselItem key={index}>
-                                          <img src={image} alt={`Project image ${index + 1}`} className="w-full h-40 object-cover" />
-                                        </CarouselItem>
-                                      ))}
-                                    </CarouselContent>
-                                    {project.images.length > 1 && (
-                                      <>
-                                        <CarouselPrevious className="left-2" />
-                                        <CarouselNext className="right-2" />
-                                      </>
-                                    )}
-                                  </Carousel>
-                                )}
-                <div className="flex items-start justify-between mb-2">
-                  <h4 className="font-medium">{project.title || 'Project Title'}</h4>
-                  {project.featured && (
-                    <Star className="w-4 h-4 text-primary fill-current" />
-                  )}
+      {/* About Section */}
+      <section id="preview-about" className="py-20 px-6">
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ y: 50, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl font-bold mb-4">About Me</h2>
+            <div className="w-24 h-1 bg-primary mx-auto"></div>
+          </motion.div>
+          
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <motion.div
+              initial={{ x: -50, opacity: 0 }}
+              whileInView={{ x: 0, opacity: 1 }}
+              viewport={{ once: true }}
+              className="space-y-6"
+            >
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                {portfolioData.bio}
+              </p>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center space-x-3">
+                  <MapPin className="w-5 h-5 text-primary" />
+                  <span className="text-sm">{portfolioData.location}</span>
                 </div>
-                <p className="text-sm opacity-70 mb-3">
-                  {project.description || 'Project description goes here...'}
-                </p>
-                <div className="flex flex-wrap gap-1">
-                  {project.technologies.slice(0, 3).map((tech, techIndex) => (
-                    <span key={techIndex} className="px-2 py-1 bg-primary/10 text-primary rounded text-xs">
-                      {tech}
-                    </span>
+                <div className="flex items-center space-x-3">
+                  <Mail className="w-5 h-5 text-primary" />
+                  <span className="text-sm">{portfolioData.email}</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <CheckCircle className="w-5 h-5 text-primary" />
+                  <span className="text-sm">{portfolioData.availability}</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Globe className="w-5 h-5 text-primary" />
+                  <span className="text-sm">{portfolioData.timezone}</span>
+                </div>
+              </div>
+            </motion.div>
+            
+            <motion.div
+              initial={{ x: 50, opacity: 0 }}
+              whileInView={{ x: 0, opacity: 1 }}
+              viewport={{ once: true }}
+              className="space-y-6"
+            >
+              <div>
+                <h3 className="text-xl font-semibold mb-4">Languages</h3>
+                <div className="space-y-2">
+                  {portfolioData.languages.map((lang, index) => (
+                    <div key={index} className="flex justify-between items-center">
+                      <span>{lang.name}</span>
+                      <Badge variant="secondary">{lang.proficiency}</Badge>
+                    </div>
                   ))}
                 </div>
+              </div>
+              
+              <div>
+                <h3 className="text-xl font-semibold mb-4">Interests</h3>
+                <div className="flex flex-wrap gap-2">
+                  {portfolioData.interests.map((interest, index) => (
+                    <Badge key={index} variant="outline">{interest}</Badge>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Experience Section */}
+      <section id="preview-experience" className="py-20 px-6 bg-muted/30">
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ y: 50, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl font-bold mb-4">Experience</h2>
+            <div className="w-24 h-1 bg-primary mx-auto"></div>
+          </motion.div>
+          
+          <div className="space-y-8">
+            {portfolioData.experience.map((exp, index) => (
+              <motion.div
+                key={exp.id}
+                initial={{ y: 50, opacity: 0 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className="relative pl-8 pb-8 border-l-2 border-primary/20 last:border-l-0"
+              >
+                <div className="absolute -left-2 top-0 w-4 h-4 bg-primary rounded-full"></div>
+                <Card className="p-6">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+                    <div>
+                      <h3 className="text-xl font-semibold text-primary">{exp.position}</h3>
+                      <h4 className="text-lg font-medium">{exp.company}</h4>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      <div className="flex items-center space-x-2">
+                        <Calendar className="w-4 h-4" />
+                        <span>{exp.startDate} - {exp.endDate}</span>
+                      </div>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <MapPin className="w-4 h-4" />
+                        <span>{exp.location}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-muted-foreground">{exp.description}</p>
+                </Card>
               </motion.div>
             ))}
           </div>
         </div>
-      )}
+      </section>
 
-      {/* Social Links */}
-      {portfolioData.socialLinks.length > 0 && (
-        <div className="p-8 space-y-4">
-          <h3 className="text-lg font-semibold text-primary">Connect With Me</h3>
-          <div className="flex justify-center gap-3 flex-wrap">
-            {portfolioData.socialLinks.map((link, index) => {
-              const IconComponent = getIconComponent(link.icon);
-              return (
-                <motion.div
-                  key={link.id}
-                  className="social-icon autobio-transition hover:scale-110"
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ duration: 0.3, delay: index * 0.1 }}
-                >
-                  <IconComponent className="w-5 h-5" />
-                </motion.div>
-              );
-            })}
+      {/* Projects Section */}
+      <section id="preview-projects" className="py-20 px-6">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            initial={{ y: 50, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl font-bold mb-4">Featured Projects</h2>
+            <div className="w-24 h-1 bg-primary mx-auto"></div>
+          </motion.div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {portfolioData.projects.filter(p => p.featured).map((project, index) => (
+              <motion.div
+                key={project.id}
+                initial={{ y: 50, opacity: 0 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <Card className="h-full overflow-hidden group hover:shadow-2xl transition-all duration-300">
+                  <CardHeader>
+                    <CardTitle className="text-xl text-primary group-hover:text-primary/80 transition-colors">
+                      {project.title}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-muted-foreground">{project.description}</p>
+                    
+                    <div className="flex flex-wrap gap-2">
+                      {project.technologies.map((tech, techIndex) => (
+                        <Badge key={techIndex} variant="secondary" className="text-xs">
+                          {tech}
+                        </Badge>
+                      ))}
+                    </div>
+                    
+                    <div className="flex space-x-4 pt-4">
+                      <Button asChild variant="outline" size="sm">
+                        <a href={project.liveUrl} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="w-4 h-4 mr-2" />
+                          Live Demo
+                        </a>
+                      </Button>
+                      <Button asChild variant="outline" size="sm">
+                        <a href={project.githubUrl} target="_blank" rel="noopener noreferrer">
+                          <Github className="w-4 h-4 mr-2" />
+                          Code
+                        </a>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
           </div>
         </div>
-      )}
+      </section>
+
+      {/* Skills Section */}
+      <section id="preview-skills" className="py-20 px-6 bg-muted/30">
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ y: 50, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl font-bold mb-4">Skills & Technologies</h2>
+            <div className="w-24 h-1 bg-primary mx-auto"></div>
+          </motion.div>
+          
+          <motion.div
+            initial={{ y: 50, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            viewport={{ once: true }}
+            className="flex flex-wrap gap-3 justify-center"
+          >
+            {portfolioData.skills.map((skill, index) => (
+              <motion.div
+                key={skill}
+                initial={{ scale: 0, opacity: 0 }}
+                whileInView={{ scale: 1, opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.05 }}
+                whileHover={{ scale: 1.05 }}
+              >
+                <Badge 
+                  variant="outline" 
+                  className="px-4 py-2 text-sm font-medium bg-background/50 hover:bg-primary hover:text-primary-foreground transition-all duration-300 cursor-default"
+                >
+                  {skill}
+                </Badge>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Education Section */}
+      <section id="preview-education" className="py-20 px-6">
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ y: 50, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl font-bold mb-4">Education & Certifications</h2>
+            <div className="w-24 h-1 bg-primary mx-auto"></div>
+          </motion.div>
+          
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Education */}
+            <div>
+              <h3 className="text-2xl font-semibold mb-6 flex items-center">
+                <GraduationCap className="w-6 h-6 mr-2 text-primary" />
+                Education
+              </h3>
+              <div className="space-y-6">
+                {portfolioData.education.map((edu, index) => (
+                  <motion.div
+                    key={edu.id}
+                    initial={{ x: -50, opacity: 0 }}
+                    whileInView={{ x: 0, opacity: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <Card className="p-6">
+                      <h4 className="text-lg font-semibold text-primary">{edu.degree} in {edu.field}</h4>
+                      <p className="font-medium">{edu.institution}</p>
+                      <p className="text-sm text-muted-foreground mb-2">{edu.startDate} - {edu.endDate}</p>
+                      <p className="text-muted-foreground">{edu.description}</p>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Certifications */}
+            <div>
+              <h3 className="text-2xl font-semibold mb-6 flex items-center">
+                <Award className="w-6 h-6 mr-2 text-primary" />
+                Certifications
+              </h3>
+              <div className="space-y-6">
+                {portfolioData.certifications.map((cert, index) => (
+                  <motion.div
+                    key={cert.id}
+                    initial={{ x: 50, opacity: 0 }}
+                    whileInView={{ x: 0, opacity: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <Card className="p-6">
+                      <h4 className="text-lg font-semibold text-primary">{cert.name}</h4>
+                      <p className="font-medium">{cert.issuer}</p>
+                      <p className="text-sm text-muted-foreground mb-2">{cert.date}</p>
+                      <a 
+                        href={cert.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline text-sm flex items-center"
+                      >
+                        View Certificate <ExternalLink className="w-3 h-3 ml-1" />
+                      </a>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section id="preview-testimonials" className="py-20 px-6 bg-muted/30">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            initial={{ y: 50, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl font-bold mb-4">What People Say</h2>
+            <div className="w-24 h-1 bg-primary mx-auto"></div>
+          </motion.div>
+          
+          <div className="grid md:grid-cols-2 gap-8">
+            {portfolioData.testimonials.map((testimonial, index) => (
+              <motion.div
+                key={testimonial.id}
+                initial={{ y: 50, opacity: 0 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <Card className="p-6 h-full">
+                  <div className="flex items-center mb-4">
+                    {Array.from({ length: testimonial.rating }, (_, i) => (
+                      <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
+                    ))}
+                  </div>
+                  <blockquote className="text-muted-foreground mb-6 italic">
+                    "{testimonial.content}"
+                  </blockquote>
+                  <div className="flex items-center">
+                    {testimonial.avatar && (
+                      <img 
+                        src={testimonial.avatar} 
+                        alt={testimonial.name}
+                        className="w-12 h-12 rounded-full mr-4 object-cover"
+                      />
+                    )}
+                    <div>
+                      <p className="font-semibold text-primary">{testimonial.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {testimonial.position} at {testimonial.company}
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Blog Section */}
+      <section id="preview-blog" className="py-20 px-6">
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ y: 50, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl font-bold mb-4">Latest Blog Posts</h2>
+            <div className="w-24 h-1 bg-primary mx-auto"></div>
+          </motion.div>
+          
+          <div className="grid md:grid-cols-2 gap-8">
+            {portfolioData.blogPosts.map((post, index) => (
+              <motion.article
+                key={post.id}
+                initial={{ y: 50, opacity: 0 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <Card className="p-6 h-full hover:shadow-lg transition-shadow duration-300">
+                  <h3 className="text-xl font-semibold text-primary mb-3 hover:text-primary/80 transition-colors">
+                    {post.title}
+                  </h3>
+                  <p className="text-muted-foreground mb-4">{post.excerpt}</p>
+                  <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
+                    <span>{post.publishDate}</span>
+                    <span>{post.readTime} read</span>
+                  </div>
+                  <a 
+                    href={post.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline font-medium flex items-center"
+                  >
+                    Read More <ChevronRight className="w-4 h-4 ml-1" />
+                  </a>
+                </Card>
+              </motion.article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Contact Section */}
+      <section id="preview-contact" className="py-20 px-6 bg-muted/30">
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ y: 50, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl font-bold mb-4">Let's Work Together</h2>
+            <div className="w-24 h-1 bg-primary mx-auto"></div>
+          </motion.div>
+          
+          <div className="grid md:grid-cols-2 gap-12">
+            <motion.div
+              initial={{ x: -50, opacity: 0 }}
+              whileInView={{ x: 0, opacity: 1 }}
+              viewport={{ once: true }}
+              className="space-y-8"
+            >
+              <div>
+                <h3 className="text-2xl font-semibold mb-4">Get In Touch</h3>
+                <p className="text-muted-foreground mb-6">
+                  I'm always interested in new opportunities and exciting projects. Let's discuss how we can work together!
+                </p>
+              </div>
+              
+              <div className="space-y-4">
+                <a 
+                  href={`mailto:${portfolioData.email}`}
+                  className="flex items-center space-x-3 text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <Mail className="w-5 h-5" />
+                  <span>{portfolioData.email}</span>
+                </a>
+                {portfolioData.phone && (
+                  <a 
+                    href={`tel:${portfolioData.phone}`}
+                    className="flex items-center space-x-3 text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    <User className="w-5 h-5" />
+                    <span>{portfolioData.phone}</span>
+                  </a>
+                )}
+                <div className="flex items-center space-x-3 text-muted-foreground">
+                  <MapPin className="w-5 h-5" />
+                  <span>{portfolioData.location}</span>
+                </div>
+              </div>
+              
+              <div className="flex space-x-4 pt-4">
+                {portfolioData.socialLinks.map((link) => {
+                  const Icon = iconMap[link.icon];
+                  return (
+                    <a
+                      key={link.id}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300"
+                    >
+                      <Icon className="w-5 h-5" />
+                    </a>
+                  );
+                })}
+              </div>
+            </motion.div>
+            
+            <motion.div
+              initial={{ x: 50, opacity: 0 }}
+              whileInView={{ x: 0, opacity: 1 }}
+              viewport={{ once: true }}
+            >
+              <Card className="p-6">
+                <form className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="name">Name</Label>
+                      <Input id="name" placeholder="Your name" />
+                    </div>
+                    <div>
+                      <Label htmlFor="email">Email</Label>
+                      <Input id="email" type="email" placeholder="your@email.com" />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="subject">Subject</Label>
+                    <Input id="subject" placeholder="Project discussion" />
+                  </div>
+                  <div>
+                    <Label htmlFor="message">Message</Label>
+                    <Textarea 
+                      id="message" 
+                      placeholder="Tell me about your project..." 
+                      rows={5}
+                    />
+                  </div>
+                  <Button className="w-full">
+                    <Send className="w-4 h-4 mr-2" />
+                    Send Message
+                  </Button>
+                </form>
+              </Card>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-8 px-6 border-t border-border">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <p className="text-muted-foreground">
+              © {new Date().getFullYear()} {portfolioData.name}. All rights reserved.
+            </p>
+            <div className="flex space-x-4 mt-4 md:mt-0">
+              {portfolioData.socialLinks.slice(0, 4).map((link) => {
+                const Icon = iconMap[link.icon];
+                return (
+                  <a
+                    key={link.id}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    <Icon className="w-5 h-5" />
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
-      {/* Header */}
-      <motion.div 
-        initial={{ y: -50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6 }}
-        className="bg-background/80 backdrop-blur-lg border-b sticky top-0 z-50"
-      >
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-gradient-primary flex items-center justify-center">
-                <Sparkles className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold font-display bg-gradient-primary bg-clip-text text-transparent">
-                  AutoBio Pro
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  Professional Developer Portfolio Builder
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="flex gap-2">
-                <Button
-                  variant={currentTheme === 'light' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setCurrentTheme('light')}
-                  className="autobio-transition"
-                >
-                  <Sun className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant={currentTheme === 'dark' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setCurrentTheme('dark')}
-                  className="autobio-transition"
-                >
-                  <Moon className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant={currentTheme === 'modern' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setCurrentTheme('modern')}
-                  className="autobio-transition"
-                >
-                  <Palette className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant={currentTheme === 'glassmorphism' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setCurrentTheme('glassmorphism')}
-                  className="autobio-transition"
-                >
-                  <Container className="w-4 h-4" />
-                </Button>
-              </div>
-              
-              <Button 
-                onClick={downloadPortfolio} 
-                className="autobio-transition hover:scale-105 bg-gradient-primary hover:shadow-glow"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download Portfolio
-              </Button>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto p-6">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+            AutoBio - Developer Portfolio Builder
+          </h1>
+          <p className="text-muted-foreground">Create your professional portfolio in minutes with beautiful themes and modern animations</p>
+        </div>
+
+        {/* Theme Selector & Actions */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-between items-center mb-6">
+          <div className="flex items-center space-x-2">
+            <Palette className="w-5 h-5 text-primary" />
+            <span className="font-medium">Theme:</span>
+            <div className="flex space-x-2">
+              {themes.map((theme) => {
+                const Icon = theme.icon;
+                return (
+                  <Button
+                    key={theme.id}
+                    variant={currentTheme === theme.id ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentTheme(theme.id as Theme)}
+                    className="flex items-center space-x-2"
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{theme.name}</span>
+                  </Button>
+                );
+              })}
             </div>
           </div>
+          
+          <div className="flex space-x-2">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Expand className="w-4 h-4 mr-2" />
+                  Preview
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-7xl h-[90vh] p-0">
+                <PortfolioPreview isFullscreen={true} />
+              </DialogContent>
+            </Dialog>
+            
+            <Button 
+              onClick={generatePortfolioFiles}
+              disabled={isGenerating}
+              className="flex items-center space-x-2"
+            >
+              {isGenerating ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              <span>{isGenerating ? 'Generating...' : 'Download Portfolio'}</span>
+            </Button>
+          </div>
         </div>
-      </motion.div>
 
-      <div className="max-w-7xl mx-auto p-4">
-        <div className="grid lg:grid-cols-12 gap-6">
-          {/* Sidebar */}
-          <motion.div
-            initial={{ x: -50, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="lg:col-span-3"
-          >
-            <Card className="autobio-transition hover:shadow-lg sticky top-24">
+        {/* Main Content */}
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Form Panel */}
+          <div className="space-y-6">
+            {/* Basic Information */}
+            <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Zap className="w-5 h-5 text-primary" />
-                  Builder Sections
+                <CardTitle className="flex items-center space-x-2">
+                  <User className="w-5 h-5" />
+                  <span>Basic Information</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-2">
-                <nav className="space-y-1">
-                  {sections.map((section) => {
-                    const IconComponent = section.icon;
-                    return (
-                      <Button
-                        key={section.id}
-                        variant={activeSection === section.id ? 'default' : 'ghost'}
-                        className="w-full justify-start autobio-transition"
-                        onClick={() => setActiveSection(section.id)}
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input
+                      id="name"
+                      value={portfolioData.name}
+                      onChange={(e) => setPortfolioData(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Alex Thompson"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="title">Professional Title</Label>
+                    <Input
+                      id="title"
+                      value={portfolioData.title}
+                      onChange={(e) => setPortfolioData(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="Full-Stack Developer"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="bio">Bio</Label>
+                  <Textarea
+                    id="bio"
+                    value={portfolioData.bio}
+                    onChange={(e) => setPortfolioData(prev => ({ ...prev, bio: e.target.value }))}
+                    placeholder="Tell us about yourself..."
+                    rows={3}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={portfolioData.email}
+                      onChange={(e) => setPortfolioData(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder="alex@example.com"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="location">Location</Label>
+                    <Input
+                      id="location"
+                      value={portfolioData.location}
+                      onChange={(e) => setPortfolioData(prev => ({ ...prev, location: e.target.value }))}
+                      placeholder="San Francisco, CA"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="profile-picture">Profile Picture</Label>
+                  <div className="flex items-center space-x-4">
+                    <Input
+                      id="profile-picture"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="flex-1"
+                    />
+                    {portfolioData.profilePicture && (
+                      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary">
+                        <img 
+                          src={portfolioData.profilePicture} 
+                          alt="Profile"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Hero Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Rocket className="w-5 h-5" />
+                  <span>Hero Section</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="hero-title">Hero Title</Label>
+                  <Input
+                    id="hero-title"
+                    value={portfolioData.heroTitle}
+                    onChange={(e) => setPortfolioData(prev => ({ ...prev, heroTitle: e.target.value }))}
+                    placeholder="Building Digital Experiences"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="hero-subtitle">Hero Subtitle</Label>
+                  <Input
+                    id="hero-subtitle"
+                    value={portfolioData.heroSubtitle}
+                    onChange={(e) => setPortfolioData(prev => ({ ...prev, heroSubtitle: e.target.value }))}
+                    placeholder="Full-Stack Developer & Creative Problem Solver"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="hero-description">Hero Description</Label>
+                  <Textarea
+                    id="hero-description"
+                    value={portfolioData.heroDescription}
+                    onChange={(e) => setPortfolioData(prev => ({ ...prev, heroDescription: e.target.value }))}
+                    placeholder="Describe your passion and expertise..."
+                    rows={3}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Social Links */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Globe className="w-5 h-5" />
+                  <span>Social Links</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {portfolioData.socialLinks.map((link) => {
+                  const Icon = iconMap[link.icon];
+                  return (
+                    <div key={link.id} className="flex items-center space-x-2">
+                      <Icon className="w-5 h-5 text-muted-foreground" />
+                      <select
+                        value={link.platform}
+                        onChange={(e) => {
+                          const platform = socialPlatforms.find(p => p.name === e.target.value);
+                          updateSocialLink(link.id, 'platform', e.target.value);
+                          updateSocialLink(link.id, 'icon', platform?.icon || 'Globe');
+                        }}
+                        className="px-3 py-2 border border-border rounded-md bg-background"
                       >
-                        <IconComponent className="w-4 h-4 mr-2" />
-                        {section.label}
+                        {socialPlatforms.map(platform => (
+                          <option key={platform.name} value={platform.name}>
+                            {platform.name}
+                          </option>
+                        ))}
+                      </select>
+                      <Input
+                        value={link.url}
+                        onChange={(e) => updateSocialLink(link.id, 'url', e.target.value)}
+                        placeholder={socialPlatforms.find(p => p.name === link.platform)?.placeholder}
+                        className="flex-1"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeSocialLink(link.id)}
+                      >
+                        <X className="w-4 h-4" />
                       </Button>
-                    );
-                  })}
-                </nav>
+                    </div>
+                  );
+                })}
+                <Button
+                  variant="outline"
+                  onClick={addSocialLink}
+                  className="w-full"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Social Link
+                </Button>
               </CardContent>
             </Card>
-          </motion.div>
 
-          {/* Form Section */}
-          <motion.div
-            initial={{ y: 50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="lg:col-span-5"
-          >
-            <Card className="autobio-transition hover:shadow-lg">
+            {/* Skills */}
+            <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-primary" />
-                  {sections.find(s => s.id === activeSection)?.label || 'Portfolio Editor'}
+                <CardTitle className="flex items-center space-x-2">
+                  <Code2 className="w-5 h-5" />
+                  <span>Skills</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="max-h-[calc(100vh-200px)] overflow-y-auto">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={activeSection}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    {renderFormSection()}
-                  </motion.div>
-                </AnimatePresence>
+              <CardContent className="space-y-4">
+                <div className="flex space-x-2">
+                  <Input
+                    value={newSkill}
+                    onChange={(e) => setNewSkill(e.target.value)}
+                    placeholder="Enter a skill"
+                    onKeyPress={(e) => e.key === 'Enter' && addSkill()}
+                  />
+                  <Button onClick={addSkill}>
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {portfolioData.skills.map((skill) => (
+                    <Badge
+                      key={skill}
+                      variant="secondary"
+                      className="cursor-pointer hover:bg-destructive hover:text-destructive-foreground"
+                      onClick={() => removeSkill(skill)}
+                    >
+                      {skill}
+                      <X className="w-3 h-3 ml-1" />
+                    </Badge>
+                  ))}
+                </div>
               </CardContent>
             </Card>
-          </motion.div>
+          </div>
 
-          {/* Preview Section */}
-          <motion.div
-            initial={{ x: 50, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="lg:col-span-4"
-          >
-            <Card className="autobio-transition hover:shadow-lg sticky top-24">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Monitor className="w-5 h-5 text-primary" />
-                  Live Preview
+          {/* Preview Panel */}
+          <div className="lg:sticky lg:top-6">
+            <Card className="h-[calc(100vh-120px)]">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center space-x-2">
+                  <Monitor className="w-5 h-5" />
+                  <span>Live Preview</span>
                 </CardTitle>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="icon">
-                      <Expand className="w-4 h-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-full h-screen w-full p-0 border-0">
-                    <PortfolioPreview isFullscreen={true} />
-                  </DialogContent>
-                </Dialog>
               </CardHeader>
-              <CardContent className="p-0">
+              <CardContent className="p-0 h-full">
                 <PortfolioPreview />
               </CardContent>
             </Card>
-          </motion.div>
+          </div>
         </div>
       </div>
     </div>
   );
-};
-
-export default Index;
+}

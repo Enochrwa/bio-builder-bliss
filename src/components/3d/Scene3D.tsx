@@ -3,7 +3,7 @@ import { PerspectiveCamera, Environment } from '@react-three/drei';
 import { FloatingCube, FloatingSphere, FloatingTorus } from './FloatingGeometry';
 
 interface Scene3DProps {
-  theme: 'light' | 'dark' | 'modern';
+  theme: 'light' | 'dark' | 'modern' | 'glassmorphism';
 }
 
 export const Scene3D = ({ theme }: Scene3DProps) => {
@@ -26,6 +26,12 @@ export const Scene3D = ({ theme }: Scene3DProps) => {
           primary: '#fbbf24',
           secondary: '#8b5cf6',
           accent: '#06b6d4'
+        };
+      case 'glassmorphism':
+        return {
+          primary: '#00d4ff',
+          secondary: '#ff006e',
+          accent: '#8338ec'
         };
       default:
         return {
