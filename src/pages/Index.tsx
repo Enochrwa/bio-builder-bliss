@@ -344,9 +344,14 @@ export default function Index() {
   }, []);
 
   const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(`preview-${sectionId}`);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const previewContainer = document.querySelector('.portfolio-preview');
+    const element = previewContainer?.querySelector(`#preview-${sectionId}`);
+    if (element && previewContainer) {
+      const elementPosition = (element as HTMLElement).offsetTop;
+      previewContainer.scrollTo({
+        top: elementPosition - 80, // Account for sticky navigation
+        behavior: 'smooth'
+      });
     }
     setMobileMenuOpen(false);
   };
@@ -2625,7 +2630,7 @@ document.addEventListener('DOMContentLoaded', function() {
                   <span>Live Preview</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-0 h-full">
+              <CardContent className="p-0 h-full portfolio-preview overflow-auto">
                 <PortfolioPreview />
               </CardContent>
             </Card>
